@@ -4,6 +4,7 @@
 Column production methods related to higher-level features.
 """
 
+import functools
 
 from columnflow.production import Producer, producer
 from columnflow.production.categories import category_ids
@@ -15,9 +16,12 @@ from columnflow.selection.util import create_collections_from_masks
 from columnflow.util import maybe_import
 from columnflow.columnar_util import EMPTY_FLOAT, Route, set_ak_column
 
-
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
+
+# helpers
+set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
+set_ak_column_i32 = functools.partial(set_ak_column, value_type=np.int32)
 
 
 @producer(
@@ -31,11 +35,39 @@ ak = maybe_import("awkward")
     },
 )
 def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
-    events = set_ak_column(events, "ht", ak.sum(events.Jet.pt, axis=1))
-    events = set_ak_column(events, "n_jet", ak.num(events.Jet.pt, axis=1), value_type=np.int32)
+    events = set_ak_column_f32(events, "ht", ak.sum(events.Jet.pt, axis=1))
+    events = set_ak_column_i32(events, "n_jet", ak.num(events.Jet.pt, axis=1), value_type=np.int32)
 
     return events
 
+"""
+@producer(
+    uses={
+        "Electron.pt", "Electron.eta", "Electron.phi", "Electron.mass",
+        "Muon.pt", "Muon.eta", "Muon.phi", "Muon.mass",
+    },
+    produces={
+        # new columns
+        "m_ll", "deltaR_ll",
+    },
+)
+def ll_features(self: Producer,
+                events: ak.Array,
+                **kwargs) -> ak.Array:
+    if self.config_inst.get_channel("ee"):
+        leps1 = ak.zip({"pt"})
+        leps2 = events.Electron[:, 1]
+    elif self.config_inst.get_channel("mumu"):
+        leps1 = events.Muon[:, 0]
+        leps2 = events.Muon[:, 1]
+    
+    l1l2 = (leps1 + leps2)
+    
+    events = set_ak_column_f32(events, "deltaR_ll", leps1.deltaR(leps2))
+    events = set_ak_column_f32(events, "m_ll", l1l2.mass)
+
+    return events
+"""
 
 @producer(
     uses={

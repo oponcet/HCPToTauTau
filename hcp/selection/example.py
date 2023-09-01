@@ -4,99 +4,38 @@
 Exemplary selection methods.
 """
 
+from operator import and_
+from functools import reduce
 from collections import defaultdict
 
 from columnflow.selection import Selector, SelectionResult, selector
 from columnflow.selection.stats import increment_stats
-from columnflow.selection.util import sorted_indices_from_mask
+# from columnflow.selection.util import sorted_indices_from_mask
+from columnflow.selection.cms.json_filter import json_filter
+from columnflow.selection.cms.met_filters import met_filters
 from columnflow.production.processes import process_ids
 from columnflow.production.cms.mc_weight import mc_weight
 from columnflow.util import maybe_import
 
+from hcp.selection.trigger import trigger_selection
+from hcp.selection.lepton import lepton_selection
+from hcp.selection.jet import jet_selection
 from hcp.production.example import cutflow_features
-
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
 
 
-#
-# other unexposed selectors
-# (not selectable from the command line but used by other, exposed selectors)
-#
-
-
-@selector(
-    uses={"Muon.pt", "Muon.eta"},
-)
-def muon_selection(
-    self: Selector,
-    events: ak.Array,
-    **kwargs,
-) -> tuple[ak.Array, SelectionResult]:
-    # example muon selection: exactly one muon
-    muon_mask = (events.Muon.pt >= 20.0) & (abs(events.Muon.eta) < 2.1)
-    muon_sel = ak.sum(muon_mask, axis=1) == 1
-
-    # build and return selection results
-    # "objects" maps source columns to new columns and selections to be applied on the old columns
-    # to create them, e.g. {"Muon": {"MySelectedMuon": indices_applied_to_Muon}}
-    return events, SelectionResult(
-        steps={
-            "muon": muon_sel,
-        },
-        objects={
-            "Muon": {
-                "Muon": muon_mask,
-            },
-        },
-    )
-
-
-@selector(
-    uses={"Jet.pt", "Jet.eta"},
-)
-def jet_selection(
-    self: Selector,
-    events: ak.Array,
-    **kwargs,
-) -> tuple[ak.Array, SelectionResult]:
-    # example jet selection: at least one jet
-    jet_mask = (events.Jet.pt >= 25.0) & (abs(events.Jet.eta) < 2.4)
-    jet_sel = ak.sum(jet_mask, axis=1) >= 1
-
-    # build and return selection results
-    # "objects" maps source columns to new columns and selections to be applied on the old columns
-    # to create them, e.g. {"Jet": {"MyCustomJetCollection": indices_applied_to_Jet}}
-    return events, SelectionResult(
-        steps={
-            "jet": jet_sel,
-        },
-        objects={
-            "Jet": {
-                "Jet": sorted_indices_from_mask(jet_mask, events.Jet.pt, ascending=False),
-            },
-        },
-        aux={
-            "n_jets": ak.sum(jet_mask, axis=1),
-        },
-    )
-
-
-#
-# exposed selectors
-# (those that can be invoked from the command line)
-#
-
 @selector(
     uses={
         # selectors / producers called within _this_ selector
-        mc_weight, cutflow_features, process_ids, muon_selection, jet_selection,
+        json_filter, met_filters, mc_weight, cutflow_features, process_ids, trigger_selection,
+        lepton_selection, jet_selection,
         increment_stats,
     },
     produces={
         # selectors / producers whose newly created columns should be kept
-        mc_weight, cutflow_features, process_ids,
+        mc_weight, trigger_selection, cutflow_features, process_ids,
     },
     exposed=True,
 )
@@ -109,16 +48,35 @@ def example(
     # prepare the selection results that are updated at every step
     results = SelectionResult()
 
-    # muon selection
-    events, muon_results = self[muon_selection](events, **kwargs)
-    results += muon_results
+    # filter bad data events according to golden lumi mask
+    if self.dataset_inst.is_data:
+        events, json_filter_results = self[json_filter](events, **kwargs)
+        results += json_filter_results
+
+    # met filter selection
+    events, met_filter_results = self[met_filters](events, **kwargs)
+    results += met_filter_results
+
+    event_sel_json_and_met_filter = reduce(and_, results.steps.values())
+
+    # trigger selection
+    events, trigger_results = self[trigger_selection](events, **kwargs)
+    results += trigger_results
+
+    event_sel_json_and_met_filter_and_trigger = reduce(and_, results.steps.values())
+
+    # lepton selection
+    events, lepton_results = self[lepton_selection](events, trigger_results, **kwargs)
+    results += lepton_results
 
     # jet selection
     events, jet_results = self[jet_selection](events, **kwargs)
     results += jet_results
 
     # combined event selection after all steps
-    results.main["event"] = results.steps.muon & results.steps.jet
+    # results.main["event"] = results.steps.muon & results.steps.jet
+    event_sel = reduce(and_, results.steps.values())
+    results.main["event"] = event_sel
 
     # create process ids
     events = self[process_ids](events, **kwargs)
@@ -133,7 +91,9 @@ def example(
     # increment stats
     weight_map = {
         "num_events": Ellipsis,
-        "num_events_selected": results.main.event,
+        "num_events_json_met_filter": event_sel_json_and_met_filter,
+        "num_events_json_met_filter_trigger": event_sel_json_and_met_filter_and_trigger,
+        "num_events_selected": event_sel,
     }
     group_map = {}
     if self.dataset_inst.is_mc:

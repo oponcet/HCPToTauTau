@@ -14,7 +14,7 @@ from scinum import Number
 from columnflow.util import DotDict, maybe_import
 from columnflow.columnar_util import EMPTY_FLOAT
 from columnflow.config_util import (
-    get_root_processes_from_campaign, add_shift_aliases, get_shifts_from_sources, add_category,
+    get_root_processes_from_campaign, add_shift_aliases, get_shifts_from_sources,
     verify_config_processes,
 )
 
@@ -83,6 +83,7 @@ year = campaign.x.year
 process_names = [
     "data",
     "tt",
+    "dy",
     "st",
 ]
 for process_name in process_names:
@@ -99,6 +100,7 @@ dataset_names = [
     "data_mu_b",
     # backgrounds
     "tt_sl_powheg",
+    "dy_lep_2j_amcatnlo",
     # signals
     "st_tchannel_t_powheg",
 ]
@@ -145,7 +147,7 @@ cfg.x.shift_groups = {}
 # selector step groups for conveniently looping over certain steps
 # (used in cutflow tasks)
 cfg.x.selector_step_groups = {
-    "default": ["muon", "jet"],
+    "default": ["json", "met_filter", "trigger", "lepton", "jet"],
 }
 
 # custom method and sandbox for determining dataset lfns
@@ -158,11 +160,23 @@ cfg.x.validate_dataset_lfns = False
 
 # lumi values in inverse pb
 # https://twiki.cern.ch/twiki/bin/view/CMS/LumiRecommendationsRun2?rev=2#Combination_and_correlations
-cfg.x.luminosity = Number(41480, {
-    "lumi_13TeV_2017": 0.02j,
-    "lumi_13TeV_1718": 0.006j,
-    "lumi_13TeV_correlated": 0.009j,
-})
+if year == 2016:
+    cfg.x.luminosity = Number(36310, {
+        "lumi_13TeV_2016": 0.01j,
+        "lumi_13TeV_correlated": 0.006j,
+    })
+elif year == 2017:
+    cfg.x.luminosity = Number(41480, {
+        "lumi_13TeV_2017": 0.02j,
+        "lumi_13TeV_1718": 0.006j,
+        "lumi_13TeV_correlated": 0.009j,
+    })
+else:  # 2018
+    cfg.x.luminosity = Number(59830, {
+        "lumi_13TeV_2017": 0.015j,
+        "lumi_13TeV_1718": 0.002j,
+        "lumi_13TeV_correlated": 0.02j,
+    })
 
 # names of muon correction sets and working points
 # (used in the muon producer)
@@ -224,6 +238,7 @@ cfg.x.keep_columns = DotDict.wrap({
         "PV.npvs",
         # columns added during selection
         "deterministic_seed", "process_id", "mc_weight", "cutflow.*",
+        "leptons_os", "lepton_ss", "single_triggered", "double_triggered",
     },
     "cf.MergeSelectionMasks": {
         "normalization_weight", "process_id", "category_ids", "cutflow.*",
@@ -249,96 +264,28 @@ cfg.x.versions = {
 }
 
 # channels
-# (just one for now)
-cfg.add_channel(name="mutau", id=1)
+cfg.add_channel(name="ee", id=1)
+cfg.add_channel(name="mumu", id=2)
 
 # add categories using the "add_category" tool which adds auto-generated ids
 # the "selection" entries refer to names of selectors, e.g. in selection/example.py
-add_category(
-    cfg,
-    name="incl",
-    selection="cat_incl",
-    label="inclusive",
-)
-add_category(
-    cfg,
-    name="2j",
-    selection="cat_2j",
-    label="2 jets",
-)
+from hcp.config.categories import add_categories
+add_categories(cfg)
 
 # add variables
 # (the "event", "run" and "lumi" variables are required for some cutflow plotting task,
 # and also correspond to the minimal set of columns that coffea's nano scheme requires)
-cfg.add_variable(
-    name="event",
-    expression="event",
-    binning=(1, 0.0, 1.0e9),
-    x_title="Event number",
-    discrete_x=True,
-)
-cfg.add_variable(
-    name="run",
-    expression="run",
-    binning=(1, 100000.0, 500000.0),
-    x_title="Run number",
-    discrete_x=True,
-)
-cfg.add_variable(
-    name="lumi",
-    expression="luminosityBlock",
-    binning=(1, 0.0, 5000.0),
-    x_title="Luminosity block",
-    discrete_x=True,
-)
-cfg.add_variable(
-    name="n_jet",
-    expression="n_jet",
-    binning=(11, -0.5, 10.5),
-    x_title="Number of jets",
-    discrete_x=True,
-)
-cfg.add_variable(
-    name="jets_pt",
-    expression="Jet.pt",
-    binning=(40, 0.0, 400.0),
-    unit="GeV",
-    x_title=r"$p_{T} of all jets$",
-)
-cfg.add_variable(
-    name="jet1_pt",
-    expression="Jet.pt[:,0]",
-    null_value=EMPTY_FLOAT,
-    binning=(40, 0.0, 400.0),
-    unit="GeV",
-    x_title=r"Jet 1 $p_{T}$",
-)
-cfg.add_variable(
-    name="jet1_eta",
-    expression="Jet.eta[:,0]",
-    null_value=EMPTY_FLOAT,
-    binning=(30, -3.0, 3.0),
-    x_title=r"Jet 1 $\eta$",
-)
-cfg.add_variable(
-    name="ht",
-    expression=lambda events: ak.sum(events.Jet.pt, axis=1),
-    binning=(40, 0.0, 800.0),
-    unit="GeV",
-    x_title="HT",
-)
-# weights
-cfg.add_variable(
-    name="mc_weight",
-    expression="mc_weight",
-    binning=(200, -10, 10),
-    x_title="MC weight",
-)
-# cutflow variables
-cfg.add_variable(
-    name="cf_jet1_pt",
-    expression="cutflow.jet1_pt",
-    binning=(40, 0.0, 400.0),
-    unit="GeV",
-    x_title=r"Jet 1 $p_{T}$",
-)
+# add variables
+from hcp.config.variables import add_variables
+add_variables(cfg)
+
+# add triggers
+if year == 2017:
+    from hcp.config.triggers import add_triggers_2017
+    add_triggers_2017(cfg)
+else:
+    raise NotImplementedError(f"triggers not implemented for {year}")
+
+# add met filters
+from hcp.config.met_filters import add_met_filters
+add_met_filters(cfg)
