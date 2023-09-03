@@ -1,7 +1,7 @@
 # coding: utf-8
 
 """
-Exemplary selection methods.
+Objects and Event Selections.
 """
 
 from operator import and_
@@ -10,7 +10,6 @@ from collections import defaultdict
 
 from columnflow.selection import Selector, SelectionResult, selector
 from columnflow.selection.stats import increment_stats
-# from columnflow.selection.util import sorted_indices_from_mask
 from columnflow.selection.cms.json_filter import json_filter
 from columnflow.selection.cms.met_filters import met_filters
 from columnflow.production.processes import process_ids
@@ -20,7 +19,7 @@ from columnflow.util import maybe_import
 from hcp.selection.trigger import trigger_selection
 from hcp.selection.lepton import lepton_selection
 from hcp.selection.jet import jet_selection
-from hcp.production.example import cutflow_features
+from hcp.production.main import cutflow_features
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -39,7 +38,7 @@ ak = maybe_import("awkward")
     },
     exposed=True,
 )
-def example(
+def main(
     self: Selector,
     events: ak.Array,
     stats: defaultdict,

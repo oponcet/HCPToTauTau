@@ -116,11 +116,11 @@ for dataset_name in dataset_names:
 verify_config_processes(cfg, warn=True)
 
 # default objects, such as calibrator, selector, producer, ml model, inference model, etc
-cfg.x.default_calibrator = "example"
-cfg.x.default_selector = "example"
-cfg.x.default_producer = "example"
+cfg.x.default_calibrator = "main"
+cfg.x.default_selector = "main"
+cfg.x.default_producer = "main"
 cfg.x.default_ml_model = None
-cfg.x.default_inference_model = "example"
+cfg.x.default_inference_model = "main"
 cfg.x.default_categories = ("incl",)
 cfg.x.default_variables = ("n_jet", "jet1_pt")
 
@@ -234,14 +234,15 @@ cfg.x.keep_columns = DotDict.wrap({
         # object info
         "Jet.pt", "Jet.eta", "Jet.phi", "Jet.mass", "Jet.btagDeepFlavB", "Jet.hadronFlavour",
         "Muon.pt", "Muon.eta", "Muon.phi", "Muon.mass", "Muon.pfRelIso04_all",
+        "Electron.pt", "Electron.eta", "Electron.phi",
         "MET.pt", "MET.phi", "MET.significance", "MET.covXX", "MET.covXY", "MET.covYY",
-        "PV.npvs",
+        "PV.npvs", "m_ll",
         # columns added during selection
         "deterministic_seed", "process_id", "mc_weight", "cutflow.*",
         "leptons_os", "lepton_ss", "single_triggered", "double_triggered",
     },
     "cf.MergeSelectionMasks": {
-        "normalization_weight", "process_id", "category_ids", "cutflow.*",
+        "m_ll", "normalization_weight", "process_id", "category_ids", "cutflow.*",
     },
     "cf.UniteColumns": {
         "*",

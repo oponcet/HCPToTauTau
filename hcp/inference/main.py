@@ -8,7 +8,7 @@ from columnflow.inference import inference_model, ParameterType, ParameterTransf
 
 
 @inference_model
-def example(self):
+def main(self):
 
     #
     # categories
@@ -101,7 +101,7 @@ def example(self):
 @inference_model
 def example_no_shapes(self):
     # same initialization as "example" above
-    example.init_func.__get__(self, self.__class__)()
+    main.init_func.__get__(self, self.__class__)()
 
     #
     # remove all shape parameters

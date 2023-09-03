@@ -65,7 +65,7 @@ def add_lepton_features(cfg: od.Config) -> None:
             )
     cfg.add_variable(
         name="m_ll",
-        binning=(40, 0., 200.),
+        binning=(50, 0, 200),
         unit="GeV",
         x_title=r"$m_{ll}$",
     )

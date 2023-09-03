@@ -92,4 +92,4 @@ class ExampleModel(MLModel):
 
 
 # usable derivations
-example = ExampleModel.derive("example", cls_dict={"folds": 2})
+main = ExampleModel.derive("example", cls_dict={"folds": 2})

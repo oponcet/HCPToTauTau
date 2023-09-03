@@ -1,7 +1,7 @@
 # coding: utf-8
 
 """
-Exemplary calibration methods.
+Calibration methods.
 """
 
 from columnflow.calibration import Calibrator, calibrator
@@ -26,7 +26,7 @@ ak = maybe_import("awkward")
         "Jet.pt_jec_down", "Jet.mass_jec_down",
     },
 )
-def example(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
+def main(self: Calibrator, events: ak.Array, **kwargs) -> ak.Array:
     # a) "correct" Jet.pt by scaling four momenta by 1.1 (pt<30) or 0.9 (pt<=30)
     # b) add 4 new columns faking the effect of JEC variations
 

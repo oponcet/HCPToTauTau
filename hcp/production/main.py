@@ -40,34 +40,6 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     return events
 
-"""
-@producer(
-    uses={
-        "Electron.pt", "Electron.eta", "Electron.phi", "Electron.mass",
-        "Muon.pt", "Muon.eta", "Muon.phi", "Muon.mass",
-    },
-    produces={
-        # new columns
-        "m_ll", "deltaR_ll",
-    },
-)
-def ll_features(self: Producer,
-                events: ak.Array,
-                **kwargs) -> ak.Array:
-    if self.config_inst.get_channel("ee"):
-        leps1 = ak.zip({"pt"})
-        leps2 = events.Electron[:, 1]
-    elif self.config_inst.get_channel("mumu"):
-        leps1 = events.Muon[:, 0]
-        leps2 = events.Muon[:, 1]
-    
-    l1l2 = (leps1 + leps2)
-    
-    events = set_ak_column_f32(events, "deltaR_ll", leps1.deltaR(leps2))
-    events = set_ak_column_f32(events, "m_ll", l1l2.mass)
-
-    return events
-"""
 
 @producer(
     uses={
@@ -114,7 +86,7 @@ def cutflow_features(
         features, category_ids, normalization_weights, muon_weights, deterministic_seeds,
     },
 )
-def example(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+def main(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # features
     events = self[features](events, **kwargs)
 
