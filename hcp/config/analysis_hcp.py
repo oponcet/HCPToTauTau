@@ -81,10 +81,12 @@ year = campaign.x.year
 
 # add processes we are interested in
 process_names = [
-    "data",
+    #"data",
     "tt",
     "dy",
     "st",
+    "ewk",
+    "vv",
 ]
 for process_name in process_names:
     # add the process
@@ -97,10 +99,20 @@ for process_name in process_names:
 # add datasets we need to study
 dataset_names = [
     # data
-    "data_mu_b",
+    #"data_mu_b",
     # backgrounds
     "tt_sl_powheg",
+    "tt_dl_powheg",
+    "dy_lep_0j_amcatnlo",
+    "dy_lep_1j_amcatnlo",
     "dy_lep_2j_amcatnlo",
+    "ewk_z_ll_m50_madgraph",
+    "zz_pythia",
+    "zz_qqll_m4_amcatnlo",
+    "zz_llnunu_powheg",
+    "wz_pythia",
+    "wz_lllnu_amcatnlo",
+    "wz_qqll_m4_amcatnlo",
     # signals
     "st_tchannel_t_powheg",
 ]
@@ -234,15 +246,16 @@ cfg.x.keep_columns = DotDict.wrap({
         # object info
         "Jet.pt", "Jet.eta", "Jet.phi", "Jet.mass", "Jet.btagDeepFlavB", "Jet.hadronFlavour",
         "Muon.pt", "Muon.eta", "Muon.phi", "Muon.mass", "Muon.pfRelIso04_all",
-        "Electron.pt", "Electron.eta", "Electron.phi",
+        "Electron.pt", "Electron.eta", "Electron.phi", "Electron.mass",
         "MET.pt", "MET.phi", "MET.significance", "MET.covXX", "MET.covXY", "MET.covYY",
-        "PV.npvs", "m_ll",
+        "PV.npvs",
         # columns added during selection
-        "deterministic_seed", "process_id", "mc_weight", "cutflow.*",
-        "leptons_os", "lepton_ss", "single_triggered", "double_triggered",
+        "deterministic_seed", "process_id", "mc_weight", "cutflow.*", "channel_id",
+        "leptons_os", "leptons_ss", "single_triggered", "double_triggered",
+        "m_ll", "dr_ll", #"m_ele_ele", "m_mu_mu",
     },
     "cf.MergeSelectionMasks": {
-        "m_ll", "normalization_weight", "process_id", "category_ids", "cutflow.*",
+        "normalization_weight", "process_id", "category_ids", "channel_id", "cutflow.*",
     },
     "cf.UniteColumns": {
         "*",

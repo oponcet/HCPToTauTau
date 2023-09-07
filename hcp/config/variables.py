@@ -63,15 +63,37 @@ def add_lepton_features(cfg: od.Config) -> None:
                 binning=(25, -2.5, 2.5),
                 x_title=obj + r" $\eta$",
             )
+
     cfg.add_variable(
         name="m_ll",
+        null_value=EMPTY_FLOAT,
         binning=(50, 0, 200),
         unit="GeV",
         x_title=r"$m_{ll}$",
     )
     cfg.add_variable(
-        name="deltaR_ll",
+        name="m_ele_ele",
+        null_value=EMPTY_FLOAT,
+        binning=(50, 0, 200),
+        unit="GeV",
+        x_title=r"$m_{ee}$",
+    )
+    cfg.add_variable(
+        name="m_mu_mu",
+        null_value=EMPTY_FLOAT,
+        binning=(50, 0, 200),
+        unit="GeV",
+        x_title=r"$m_{mumu}$",
+    )
+    cfg.add_variable(
+        name="dr_ll",
+        null_value=EMPTY_FLOAT,
         binning=(40, 0, 5),
+        x_title=r"$\Delta R(l,l)$",
+    )
+    cfg.add_variable(
+        name="leptons_os",
+        binning=(2, 0, 2),
         x_title=r"$\Delta R(l,l)$",
     )
     

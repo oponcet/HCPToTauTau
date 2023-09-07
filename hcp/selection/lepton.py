@@ -10,7 +10,7 @@ from columnflow.util import maybe_import
 
 from hcp.selection.util import trigger_object_matching, IF_NANO_V9, IF_NANO_V11
 from hcp.config.trigger_util import Trigger
-from hcp.util import invariant_mass
+from hcp.util import invariant_mass, deltaR
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -198,7 +198,8 @@ def electron_selection(
     produces={
         electron_selection, muon_selection,
         # new columns
-        "channel_id", "leptons_os", "single_triggered", "double_triggered", "m_ll",
+        "channel_id", "leptons_os", "leptons_ss", "single_triggered", "double_triggered",
+        #"m_ll", "dr_ll",
     },
 )
 def lepton_selection(
@@ -224,7 +225,8 @@ def lepton_selection(
     empty_indices = ak.zeros_like(1 * events.event, dtype=np.uint16)[..., None][..., :0]
     sel_electron_indices = empty_indices
     sel_muon_indices = empty_indices
-    m_ll = false_mask
+    #m_ll = false_mask
+    #dr_ll = false_mask
     
     # perform each lepton election step separately per trigger
     for trigger, trigger_fired, leg_masks in trigger_results.x.trigger_data:
@@ -248,7 +250,8 @@ def lepton_selection(
             call_force=True,
             **kwargs,
         )
-
+        #print(f"muon_indices: {muon_indices}")
+        
         # lepton pair selecton per trigger via lepton counting
         if trigger.has_tag({"single_e", "double_e_e"}):
             # expect 1 electron, 1 veto electron (the same one), 0 veto muons
@@ -262,6 +265,7 @@ def lepton_selection(
             )
             # determine the os/ss charge sign relation
             is_os = ak.sum(events.Electron[electron_indices].charge, axis=-1) == 0
+            #print(f"is_os: {is_os}")
             is_ss = ak.sum(events.Electron[electron_indices].charge, axis=-1) != 0
             # store global variables
             where = (channel_id == 0) & is_ee
@@ -271,7 +275,11 @@ def lepton_selection(
             single_triggered = ak.where(where & is_single, True, single_triggered)
             double_triggered = ak.where(where & is_double, True, double_triggered)
             sel_electron_indices = ak.where(where, electron_indices, sel_electron_indices)
-            m_ll = invariant_mass(events.Electron[sel_electron_indices])
+            #print(f"Electrons: {events.Electron[sel_electron_indices]}")
+            #_m_ll = invariant_mass(events.Electron[electron_indices])
+            #m_ll = ak.where(where, _m_ll, m_ll)
+            #_dr_ll = deltaR(events.Electron[electron_indices][:,:1], events.Electron[electron_indices][:,1:2]) 
+            #dr_ll = ak.where(where, _dr_ll, dr_ll)
             
         elif trigger.has_tag({"single_mu", "double_mu_mu"}):
             # expect 1 muon, 1 veto muon (the same one), 0 veto electrons
@@ -294,25 +302,34 @@ def lepton_selection(
             single_triggered = ak.where(where & is_single, True, single_triggered)
             double_triggered = ak.where(where & is_double, True, double_triggered)
             sel_muon_indices = ak.where(where, muon_indices, sel_muon_indices)
-            m_ll = invariant_mass(events.Muon[sel_muon_indices])
-
+            #_m_ll = invariant_mass(events.Muon[muon_indices])
+            #m_ll = ak.where(where, _m_ll, m_ll)
+            #_dr_ll = deltaR(events.Muon[muon_indices][:,:1], events.Muon[muon_indices][:,1:2])
+            #dr_ll = ak.where(where, _dr_ll, dr_ll)
+            
     # some final type conversions
     channel_id = ak.values_astype(channel_id, np.uint8)
     leptons_os = ak.fill_none(leptons_os, False)
     leptons_ss = ak.fill_none(leptons_ss, False)
     sel_electron_indices = ak.values_astype(sel_electron_indices, np.int32)
     sel_muon_indices = ak.values_astype(sel_muon_indices, np.int32)
-    m_ll = ak.values_astype(m_ll, np.float32)
-    
+    #m_ll = ak.values_astype(m_ll, np.float32)
+    #print(f"m_ll: {m_ll}")
+    #dr_ll = ak.values_astype(dr_ll, np.float32)
+    #print(f"dr_ll: {dr_ll}")
+
+    #print(f"channelId: {channel_id}")
+    #print(f"leptons_os: {leptons_os}")
     # save new columns
     events = set_ak_column(events, "channel_id", channel_id)
     events = set_ak_column(events, "leptons_os", leptons_os)
     events = set_ak_column(events, "leptons_ss", leptons_ss)
     events = set_ak_column(events, "single_triggered", single_triggered)
     events = set_ak_column(events, "double_triggered", double_triggered)
-    events = set_ak_column(events, "m_ll", m_ll)
-
-    print(f"M_leplep: {m_ll}")
+    #events = set_ak_column(events, "m_ll", m_ll)
+    #events = set_ak_column(events, "dr_ll", dr_ll)
+    
+    #print(f"Column m_ll: {events.m_ll}")
     
     return events, SelectionResult(
         steps={

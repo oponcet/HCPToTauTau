@@ -27,3 +27,19 @@ def add_categories(config: od.Config) -> None:
         selection="cat_2j",
         label="2 jets",
     )
+    """
+    add_category(
+        config,
+        name="ele_ele",
+        id=101,
+        selection="sel_ee",
+        label="ee_channel",
+    )
+    add_category(
+        config,
+        name="mu_mu",
+        id=102,
+        selection="sel_mm",
+        label="mm_channel",
+    )
+    """

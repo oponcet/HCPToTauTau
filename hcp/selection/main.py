@@ -67,7 +67,7 @@ def main(
     # lepton selection
     events, lepton_results = self[lepton_selection](events, trigger_results, **kwargs)
     results += lepton_results
-
+    
     # jet selection
     events, jet_results = self[jet_selection](events, **kwargs)
     results += jet_results
