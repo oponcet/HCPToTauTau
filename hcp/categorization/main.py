@@ -26,16 +26,26 @@ def cat_2j(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.
     # two or more jets
     return events, ak.num(events.Jet.pt, axis=1) >= 2
 
-"""
+
 @categorizer(uses={"channel_id"})
 def sel_ee(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     # ee channel
     ch = self.config_inst.get_channel("ee")
     return events, events["channel_id"] == ch.id
 
+
 @categorizer(uses={"channel_id"})
 def sel_mm(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
     # mm channel
     ch = self.config_inst.get_channel("mumu")
     return events, events["channel_id"] == ch.id
-"""
+
+
+@categorizer(uses={"leptons_os"})
+def sel_os(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    return events, events["leptons_os"] == True
+
+
+@categorizer(uses={"leptons_ss"})
+def sel_ss(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    return events, events["leptons_ss"] == True

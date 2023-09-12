@@ -34,7 +34,7 @@ ak = maybe_import("awkward")
     },
     produces={
         # selectors / producers whose newly created columns should be kept
-        mc_weight, trigger_selection, cutflow_features, process_ids,
+        mc_weight, lepton_selection, trigger_selection, cutflow_features, process_ids,
     },
     exposed=True,
 )
@@ -109,9 +109,14 @@ def main(
                 "mask_fn": (lambda v: events.process_id == v),
             },
             # per jet multiplicity
-            "njet": {
-                "values": results.x.n_jets,
-                "mask_fn": (lambda v: results.x.n_jets == v),
+            #"njet": {
+            #    "values": results.x.n_jets,
+            #    "mask_fn": (lambda v: results.x.n_jets == v),
+            #},
+            # per channel
+            "channel": {
+                "values": events.channel_id,
+                "mask_fn": (lambda v: events.channel_id == v),
             },
         }
     events, results = self[increment_stats](

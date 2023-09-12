@@ -72,6 +72,13 @@ def add_lepton_features(cfg: od.Config) -> None:
         x_title=r"$m_{ll}$",
     )
     cfg.add_variable(
+        name="m_ll_sel",
+        null_value=EMPTY_FLOAT,
+        binning=(50, 0, 200),
+        unit="GeV",
+        x_title=r"$m_{ll}$",
+    )
+    cfg.add_variable(
         name="m_ele_ele",
         null_value=EMPTY_FLOAT,
         binning=(50, 0, 200),
@@ -87,6 +94,12 @@ def add_lepton_features(cfg: od.Config) -> None:
     )
     cfg.add_variable(
         name="dr_ll",
+        null_value=EMPTY_FLOAT,
+        binning=(40, 0, 5),
+        x_title=r"$\Delta R(l,l)$",
+    )
+    cfg.add_variable(
+        name="dr_ll_sel",
         null_value=EMPTY_FLOAT,
         binning=(40, 0, 5),
         x_title=r"$\Delta R(l,l)$",
