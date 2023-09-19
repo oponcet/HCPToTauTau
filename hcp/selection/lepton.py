@@ -6,7 +6,7 @@ Lepton Selection
 
 from columnflow.selection import Selector, SelectionResult, selector
 from columnflow.columnar_util import set_ak_column
-from columnflow.util import maybe_import
+from columnflow.util import DotDict, maybe_import
 
 from hcp.selection.util import trigger_object_matching, IF_NANO_V9, IF_NANO_V11
 from hcp.config.trigger_util import Trigger
@@ -42,6 +42,8 @@ def muon_selection(
     """
     is_single = trigger.has_tag("single_mu")
     is_double = trigger.has_tag("double_mu_mu")
+    is_cross = trigger.has_tag("cross_mu_tau")
+
     is_2016 = self.config_inst.campaign.x.year == 2016
 
     # start per-muon mask with trigger object matching
@@ -57,6 +59,12 @@ def muon_selection(
         assert abs(trigger.legs[0].pdg_id) == 13
         # match leg 0
         matches_leg0 = trigger_object_matching(events.Muon, events.TrigObj[leg_masks[0]])
+    elif is_cross:
+        # catch config errors
+        assert trigger.n_legs == len(leg_masks) == 2
+        assert abs(trigger.legs[0].pdg_id) == 13
+        # match leg 0
+        matches_leg0 = trigger_object_matching(events.Muon, events.TrigObj[leg_masks[0]])
 
     # pt sorted indices for converting masks to indices
     sorted_indices = ak.argsort(events.Muon.pt, axis=-1, ascending=False)
@@ -64,7 +72,7 @@ def muon_selection(
     # default muon mask, only required for single and cross triggers with muon leg
     default_mask = None
     default_indices = None
-    if is_single or is_double:
+    if is_single or is_double or is_cross:
         if is_2016:
             min_pt = 23.0 if is_single else 20.0
         else:
@@ -96,6 +104,144 @@ def muon_selection(
     veto_indices = ak.values_astype(veto_indices, np.int32)
 
     return default_indices, veto_indices
+
+
+@selector(
+    uses={
+        # nano columns
+        "Tau.pt", "Tau.eta", "Tau.phi", "Tau.dz", "Tau.idDeepTau2017v2p1VSe",
+        "Tau.idDeepTau2017v2p1VSmu", "Tau.idDeepTau2017v2p1VSjet",
+        "TrigObj.pt", "TrigObj.eta", "TrigObj.phi",
+        "Electron.pt", "Electron.eta", "Electron.phi",
+        "Muon.pt", "Muon.eta", "Muon.phi",
+    },
+    # shifts are declared dynamically below in tau_selection_init
+    exposed=False,
+)
+def tau_selection(
+    self: Selector,
+    events: ak.Array,
+    trigger: Trigger,
+    leg_masks: list[ak.Array],
+    electron_indices: ak.Array,
+    muon_indices: ak.Array,
+    **kwargs,
+) -> tuple[ak.Array, ak.Array]:
+    """
+    Tau selection returning a set of indices for taus that are at least VVLoose isolated (vs jet)
+    and a second mask to select the action Medium isolated ones, eventually to separate normal and
+    iso inverted taus for QCD estimations.
+
+    TODO: there is no decay mode selection yet, but this should be revisited!
+    """
+    is_single_e = trigger.has_tag("single_e")
+    is_single_mu = trigger.has_tag("single_mu")
+    is_cross_e = trigger.has_tag("cross_e_tau")
+    is_cross_mu = trigger.has_tag("cross_mu_tau")
+    is_cross_tau = trigger.has_tag("cross_tau_tau")
+    is_cross_tau_vbf = trigger.has_tag("cross_tau_tau_vbf")
+    is_any_cross_tau = is_cross_tau or is_cross_tau_vbf
+    is_2016 = self.config_inst.campaign.x.year == 2016
+    # tau id v2.1 working points (binary to int transition after nano v10)
+    if self.config_inst.campaign.x.version < 10:
+        # https://cms-nanoaod-integration.web.cern.ch/integration/master/mc94X_doc.html
+        tau_vs_e = DotDict(vvloose=2, vloose=4)
+        tau_vs_mu = DotDict(vloose=1, tight=8)
+        tau_vs_jet = DotDict(vvloose=2, loose=8, medium=16)
+    else:
+        # https://cms-nanoaod-integration.web.cern.ch/integration/cms-swmaster/data106Xul17v2_v10_doc.html#Tau
+        tau_vs_e = DotDict(vvloose=2, vloose=3)
+        tau_vs_mu = DotDict(vloose=1, tight=4)
+        tau_vs_jet = DotDict(vvloose=2, loose=4, medium=5)
+
+    # start per-tau mask with trigger object matching per leg
+    if is_cross_e or is_cross_mu:
+        # catch config errors
+        assert trigger.n_legs == len(leg_masks) == 2
+        assert abs(trigger.legs[1].pdg_id) == 15
+        # match leg 1
+        matches_leg1 = trigger_object_matching(events.Tau, events.TrigObj[leg_masks[1]])
+    elif is_cross_tau or is_cross_tau_vbf:
+        # catch config errors
+        assert trigger.n_legs == len(leg_masks) >= 2
+        assert abs(trigger.legs[0].pdg_id) == 15
+        assert abs(trigger.legs[1].pdg_id) == 15
+        # match both legs
+        matches_leg0 = trigger_object_matching(events.Tau, events.TrigObj[leg_masks[0]])
+        matches_leg1 = trigger_object_matching(events.Tau, events.TrigObj[leg_masks[1]])
+
+    # determine minimum pt and maximum eta
+    if is_single_e or is_single_mu:
+        min_pt = 20.0
+        max_eta = 2.3
+    elif is_cross_e:
+        # only existing after 2016, so force a failure in case of misconfiguration
+        min_pt = None if is_2016 else 35.0
+        max_eta = 2.1
+    elif is_cross_mu:
+        min_pt = 25.0 if is_2016 else 32.0
+        max_eta = 2.1
+    elif is_cross_tau:
+        min_pt = 40.0
+        max_eta = 2.1
+    elif is_cross_tau_vbf:
+        # only existing after 2016, so force in failure in case of misconfiguration
+        min_pt = None if is_2016 else 25.0
+        max_eta = 2.1
+
+    # base tau mask for default and qcd sideband tau
+    base_mask = (
+        (abs(events.Tau.eta) < max_eta) &
+        (events.Tau.pt > min_pt) &
+        (abs(events.Tau.dz) < 0.2) &
+        (events.Tau.idDeepTau2017v2p1VSe >= (tau_vs_e.vvloose if is_any_cross_tau else tau_vs_e.vloose)) &
+        (events.Tau.idDeepTau2017v2p1VSmu >= (tau_vs_mu.vloose if is_any_cross_tau else tau_vs_mu.tight)) &
+        (events.Tau.idDeepTau2017v2p1VSjet >= tau_vs_jet.loose)
+    )
+
+    # remove taus with too close spatial separation to previously selected leptons
+    if electron_indices is not None:
+        base_mask = base_mask & ak.all(events.Tau.metric_table(events.Electron[electron_indices]) > 0.5, axis=2)
+    if muon_indices is not None:
+        base_mask = base_mask & ak.all(events.Tau.metric_table(events.Muon[muon_indices]) > 0.5, axis=2)
+
+    # add trigger object masks
+    if is_cross_e or is_cross_mu:
+        base_mask = base_mask & matches_leg1
+    elif is_cross_tau or is_cross_tau_vbf:
+        # taus need to be matched to at least one leg, but as a side condition
+        # each leg has to have at least one match to a tau
+        base_mask = base_mask & (
+            (matches_leg0 | matches_leg1) &
+            ak.any(matches_leg0, axis=1) &
+            ak.any(matches_leg1, axis=1)
+        )
+
+    # indices for sorting first by isolation, then by pt
+    # for this, combine iso and pt values, e.g. iso 255 and pt 32.3 -> 2550032.3
+    f = 10 ** (np.ceil(np.log10(ak.max(events.Tau.pt))) + 1)
+    sort_key = events.Tau.idDeepTau2017v2p1VSjet * f + events.Tau.pt
+    sorted_indices = ak.argsort(sort_key, axis=-1, ascending=False)
+
+    # convert to sorted indices
+    base_indices = sorted_indices[base_mask[sorted_indices]]
+    base_indices = ak.values_astype(base_indices, np.int32)
+
+    # additional mask to select final, Medium isolated taus
+    iso_mask = events.Tau[base_indices].idDeepTau2017v2p1VSjet >= tau_vs_jet.medium
+
+    return base_indices, iso_mask
+
+
+@tau_selection.init
+def tau_selection_init(self: Selector) -> None:
+    # register tec shifts
+    self.shifts |= {
+        shift_inst.name
+        for shift_inst in self.config_inst.shifts
+        if shift_inst.has_tag("tec")
+    }
+
 
 
 @selector(
@@ -196,7 +342,7 @@ def electron_selection(
         "event", "Electron.charge", "Muon.charge", "Electron.mass", "Muon.mass",
     },
     produces={
-        electron_selection, muon_selection,
+        electron_selection, muon_selection, tau_selection,
         # new columns
         "channel_id", "leptons_os", "leptons_ss", "single_triggered", "double_triggered",
         #"m_ll", "dr_ll",
@@ -214,17 +360,23 @@ def lepton_selection(
     # get channels from the config
     ch_ee = self.config_inst.get_channel("ee")
     ch_mumu = self.config_inst.get_channel("mumu")
+    ch_tautau = self.config_inst.get_channel("tautau")
 
     # prepare vectors for output vectors
     false_mask = (abs(events.event) < 0)
     channel_id = np.uint8(1) * false_mask
+    tau2_isolated = false_mask
+
     leptons_os = false_mask
     leptons_ss = false_mask
     single_triggered = false_mask
     double_triggered = false_mask
+    cross_triggered = false_mask
+
     empty_indices = ak.zeros_like(1 * events.event, dtype=np.uint16)[..., None][..., :0]
     sel_electron_indices = empty_indices
     sel_muon_indices = empty_indices
+    sel_tau_indices = empty_indices
     #m_ll = false_mask
     #dr_ll = false_mask
     
@@ -232,6 +384,7 @@ def lepton_selection(
     for trigger, trigger_fired, leg_masks in trigger_results.x.trigger_data:
         is_single = trigger.has_tag("single_trigger")
         is_double = trigger.has_tag("double_trigger")
+        is_cross = trigger.has_tag("cross_trigger")
 
         # electron selection
         electron_indices, electron_veto_indices = self[electron_selection](
@@ -250,9 +403,19 @@ def lepton_selection(
             call_force=True,
             **kwargs,
         )
+        # tau selection
+        tau_indices, tau_iso_mask = self[tau_selection](
+            events,
+            trigger,
+            leg_masks,
+            electron_indices,
+            muon_indices,
+            call_force=True,
+            **kwargs,
+        )
         #print(f"muon_indices: {muon_indices}")
         
-        # lepton pair selecton per trigger via lepton counting
+        # lepton pair selecton per trigger via lepton counting : ee
         if trigger.has_tag({"single_e", "double_e_e"}):
             # expect 1 electron, 1 veto electron (the same one), 0 veto muons
             is_ee = (
@@ -280,7 +443,40 @@ def lepton_selection(
             #m_ll = ak.where(where, _m_ll, m_ll)
             #_dr_ll = deltaR(events.Electron[electron_indices][:,:1], events.Electron[electron_indices][:,1:2]) 
             #dr_ll = ak.where(where, _dr_ll, dr_ll)
-            
+        #tautau
+        elif trigger.has_tag({"cross_tau_tau", "cross_tau_tau_vbf"}):
+            # expect 0 veto electrons, 0 veto muons and at least two taus of which one is isolated
+            is_tautau = (
+                trigger_fired &
+                (ak.num(electron_veto_indices, axis=1) == 0) &
+                (ak.num(muon_veto_indices, axis=1) == 0) &
+                (ak.num(tau_indices, axis=1) >= 2) &
+                (ak.sum(tau_iso_mask, axis=1) >= 1)
+            )
+
+            # special case for cross tau vbf trigger:
+            # to avoid overlap, with non-vbf triggers, only one tau is allowed to have pt > 40
+            if trigger.has_tag("cross_tau_tau_vbf"):
+                is_tautau = is_tautau & (ak.num(events.Tau[tau_indices].pt > 40, axis=1) <= 1)
+
+            is_iso = ak.sum(tau_iso_mask, axis=1) >= 2
+            # tau_indices are sorted by highest isolation as cond. 1 and highest pt as cond. 2, so
+            # the first two indices are exactly those selected by the full-blown pairing algorithm
+            # and there is no need here to apply it again :)
+            # determine the os/ss charge sign relation
+            tau1_charge = ak.firsts(events.Tau[tau_indices].charge, axis=1)
+            tau2_charge = ak.firsts(events.Tau[tau_indices].charge[..., 1:], axis=1)
+            is_os = tau1_charge == -tau2_charge
+            # store global variables
+            where = (channel_id == 0) & is_tautau
+            channel_id = ak.where(where, ch_tautau.id, channel_id)
+            tau2_isolated = ak.where(where, is_iso, tau2_isolated)
+            leptons_os = ak.where(where, is_os, leptons_os)
+            single_triggered = ak.where(where & is_single, True, single_triggered)
+            cross_triggered = ak.where(where & is_cross, True, cross_triggered)
+            sel_tau_indices = ak.where(where, tau_indices, sel_tau_indices)
+
+        # mumu    
         elif trigger.has_tag({"single_mu", "double_mu_mu"}):
             # expect 1 muon, 1 veto muon (the same one), 0 veto electrons
             is_mumu = (
@@ -313,6 +509,8 @@ def lepton_selection(
     leptons_ss = ak.fill_none(leptons_ss, False)
     sel_electron_indices = ak.values_astype(sel_electron_indices, np.int32)
     sel_muon_indices = ak.values_astype(sel_muon_indices, np.int32)
+    sel_tau_indices = ak.values_astype(sel_tau_indices, np.int32)
+
     #m_ll = ak.values_astype(m_ll, np.float32)
     #print(f"m_ll: {m_ll}")
     #dr_ll = ak.values_astype(dr_ll, np.float32)
@@ -324,8 +522,11 @@ def lepton_selection(
     events = set_ak_column(events, "channel_id", channel_id)
     events = set_ak_column(events, "leptons_os", leptons_os)
     events = set_ak_column(events, "leptons_ss", leptons_ss)
+    events = set_ak_column(events, "tau2_isolated", tau2_isolated)
     events = set_ak_column(events, "single_triggered", single_triggered)
     events = set_ak_column(events, "double_triggered", double_triggered)
+    events = set_ak_column(events, "cross_triggered", cross_triggered)
+
     #events = set_ak_column(events, "m_ll", m_ll)
     #events = set_ak_column(events, "dr_ll", dr_ll)
     
@@ -342,6 +543,9 @@ def lepton_selection(
             "Muon": {
                 "Muon": sel_muon_indices,
             },
+            "Tau": {
+                "Tau": sel_tau_indices,
+            },
         },
         aux={
             # save the selected lepton pair for the duration of the selection
@@ -350,6 +554,7 @@ def lepton_selection(
                 [
                     events.Electron[sel_electron_indices] * 1,
                     events.Muon[sel_muon_indices] * 1,
+                    events.Tau[sel_tau_indices] * 1,
                 ],
                 axis=1,
             ),
