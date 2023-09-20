@@ -64,17 +64,25 @@ ana.x.config_groups = {}
 # ttbar and single top MCs, plus single muon data
 # update this config or add additional ones to accomodate the needs of your analysis
 
-from cmsdb.campaigns.run2_2017_nano_v9 import campaign_run2_2017_nano_v9
+#from cmsdb.campaigns.run2_2017_nano_v9 import campaign_run2_2017_nano_v9
+from cmsdb.campaigns.run2_UL2017_nano_local import campaign_run2_UL2017_nano_local
+
 
 # copy the campaign
 # (creates copies of all linked datasets, processes, etc. to allow for encapsulated customization)
-campaign = campaign_run2_2017_nano_v9.copy()
+# campaign = campaign_run2_2017_nano_v9.copy()
+campaign = campaign_run2_UL2017_nano_local.copy()
+print("campaign = ", campaign)
 
 # get all root processes
 procs = get_root_processes_from_campaign(campaign)
+print("procs = ", procs)
 
 # create a config by passing the campaign, so id and name will be identical
 cfg = ana.add_config(campaign)
+print("cfg = ", cfg)
+
+
 
 # gather campaign data
 year = campaign.x.year
@@ -82,11 +90,11 @@ year = campaign.x.year
 # add processes we are interested in
 process_names = [
     #"data",
-    "tt",
-    "dy",
-    "st",
+    # "tt",
+    # "dy",
+    # "st",
     "ewk",
-    "vv",
+    # "vv",
 ]
 for process_name in process_names:
     # add the process
@@ -97,28 +105,34 @@ for process_name in process_names:
         proc.color1 = (244, 182, 66) if proc.name == "tt" else (244, 93, 66)
 
 # add datasets we need to study
+# dataset_names = [
+#     # data
+#     #"data_mu_b",
+#     # backgrounds
+#     "tt_sl_powheg",
+#     "tt_dl_powheg",
+#     "dy_lep_0j_amcatnlo",
+#     "dy_lep_1j_amcatnlo",
+#     "dy_lep_2j_amcatnlo",
+#     "ewk_z_ll_m50_madgraph",
+#     "zz_pythia",
+#     "zz_qqll_m4_amcatnlo",
+#     "zz_llnunu_powheg",
+#     "wz_pythia",
+#     "wz_lllnu_amcatnlo",
+#     "wz_qqll_m4_amcatnlo",
+#     # signals
+#     "st_tchannel_t_powheg",
+# ]
 dataset_names = [
-    # data
-    #"data_mu_b",
-    # backgrounds
-    "tt_sl_powheg",
-    "tt_dl_powheg",
-    "dy_lep_0j_amcatnlo",
-    "dy_lep_1j_amcatnlo",
-    "dy_lep_2j_amcatnlo",
-    "ewk_z_ll_m50_madgraph",
-    "zz_pythia",
-    "zz_qqll_m4_amcatnlo",
-    "zz_llnunu_powheg",
-    "wz_pythia",
-    "wz_lllnu_amcatnlo",
-    "wz_qqll_m4_amcatnlo",
-    # signals
-    "st_tchannel_t_powheg",
+    "dy_lep_m50",
 ]
+
+
 for dataset_name in dataset_names:
     # add the dataset
     dataset = cfg.add_dataset(campaign.get_dataset(dataset_name))
+    print("data = ", dataset)
 
     # for testing purposes, limit the number of files to 2
     for info in dataset.info.values():
@@ -280,6 +294,7 @@ cfg.x.versions = {
 # channels
 cfg.add_channel(name="ee", id=1)
 cfg.add_channel(name="mumu", id=2)
+cfg.add_channel(name="tautau", id=3)
 
 # add categories using the "add_category" tool which adds auto-generated ids
 # the "selection" entries refer to names of selectors, e.g. in selection/example.py
