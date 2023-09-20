@@ -93,7 +93,7 @@ process_names = [
     # "tt",
     # "dy",
     # "st",
-    "ewk",
+    "dy",
     # "vv",
 ]
 for process_name in process_names:
