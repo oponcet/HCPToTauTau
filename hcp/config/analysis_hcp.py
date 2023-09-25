@@ -11,7 +11,7 @@ import law
 import order as od
 from scinum import Number
 
-from columnflow.util import DotDict, maybe_import
+from columnflow.util import DotDict, maybe_import, dev_sandbox
 from columnflow.columnar_util import EMPTY_FLOAT
 from columnflow.config_util import (
     get_root_processes_from_campaign, add_shift_aliases, get_shifts_from_sources,
@@ -19,7 +19,6 @@ from columnflow.config_util import (
 )
 
 ak = maybe_import("awkward")
-
 
 #
 # the main analysis object
@@ -83,6 +82,14 @@ cfg = ana.add_config(campaign)
 print("cfg = ", cfg)
 
 
+# define the lfn retrieval function
+cfg.x.get_dataset_lfns = None
+
+print(cfg.x.get_dataset_lfns)
+
+
+# # # define custom remote fs's to look at
+# cfg.x.get_dataset_lfns_remote_fs = lambda dataset_inst: f"local"
 
 # gather campaign data
 year = campaign.x.year
@@ -177,8 +184,8 @@ cfg.x.selector_step_groups = {
 }
 
 # custom method and sandbox for determining dataset lfns
-cfg.x.get_dataset_lfns = None
-cfg.x.get_dataset_lfns_sandbox = None
+# cfg.x.get_dataset_lfns = None
+# cfg.x.get_dataset_lfns_sandbox = None
 
 # whether to validate the number of obtained LFNs in GetDatasetLFNs
 # (currently set to false because the number of files per dataset is truncated to 2)
@@ -318,3 +325,41 @@ else:
 # add met filters
 from hcp.config.met_filters import add_met_filters
 add_met_filters(cfg)
+
+
+
+def get_dataset_lfns(
+    dataset_inst: od.Dataset,
+    shift_inst: od.Shift,
+    dataset_key: str,
+) -> list[str]:
+    # destructure dataset_key into parts and create the lfn base directory
+    lfn_base = law.wlcg.WLCGDirectoryTarget(
+                # modify this path according to the directory structure in your local file system.
+                # In this example, it's the same structure as for official lfns
+                #DYJetsToLL_M-10to50_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM
+                #f"/store/{dataset_inst.data_source}/{main_campaign}/{dataset_id}/{tier}/{sub_campaign}/0",
+                f"/eos/cms/store/group/phys_tau/TauFW/nano/UL2017{dataset_key}",
+                fs="local",
+    )
+    # loop though files and interpret paths as lfnsst'
+    return [
+                lfn_base.child(basename, type="f").path
+                for basename in lfn_base.listdir(pattern="*.root")
+    ]
+
+dataset_key = od.Dataset.keys
+get_dataset_lfns("dy_lep_m50","nominal","/DYJetsToLL_M-10to50_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM/" )
+
+print("dataset_key = ", dataset_key)   
+# define the lfn retrieval function
+cfg.x.get_dataset_lfns = get_dataset_lfns
+
+# # define a custom sandbox
+# cfg.x.get_dataset_lfns_sandbox = dev_sandbox("bash::$CF_BASE/sandboxes/cf.sh")
+
+# # define custom remote fs's to look at
+# cfg.x.get_dataset_lfns_remote_fs = lambda dataset_inst: f"wlcg_fs_{cfg.campaign.x.custom['name']}"
+
+#print("cfg.x.get_dataset_lfns= ",cfg.x.get_dataset_lfns)
+
