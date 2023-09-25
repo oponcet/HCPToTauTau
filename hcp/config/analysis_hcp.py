@@ -348,18 +348,13 @@ def get_dataset_lfns(
                 for basename in lfn_base.listdir(pattern="*.root")
     ]
 
-dataset_key = od.Dataset.keys
-get_dataset_lfns("dy_lep_m50","nominal","/DYJetsToLL_M-10to50_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM/" )
-
-print("dataset_key = ", dataset_key)   
 # define the lfn retrieval function
 cfg.x.get_dataset_lfns = get_dataset_lfns
 
-# # define a custom sandbox
-# cfg.x.get_dataset_lfns_sandbox = dev_sandbox("bash::$CF_BASE/sandboxes/cf.sh")
+# define a custom sandbox
+cfg.x.get_dataset_lfns_sandbox = dev_sandbox("bash::$CF_BASE/sandboxes/cf.sh")
 
 # # define custom remote fs's to look at
 # cfg.x.get_dataset_lfns_remote_fs = lambda dataset_inst: f"wlcg_fs_{cfg.campaign.x.custom['name']}"
 
-#print("cfg.x.get_dataset_lfns= ",cfg.x.get_dataset_lfns)
 
