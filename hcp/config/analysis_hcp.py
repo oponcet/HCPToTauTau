@@ -11,7 +11,7 @@ import law
 import order as od
 from scinum import Number
 
-from columnflow.util import DotDict, maybe_import
+from columnflow.util import DotDict, maybe_import, dev_sandbox
 from columnflow.columnar_util import EMPTY_FLOAT
 from columnflow.config_util import (
     get_root_processes_from_campaign, add_shift_aliases, get_shifts_from_sources,
@@ -64,7 +64,7 @@ ana.x.config_groups = {}
 # ttbar and single top MCs, plus single muon data
 # update this config or add additional ones to accomodate the needs of your analysis
 
-from cmsdb.campaigns.run2_2017_nano_v9 import campaign_run2_2017_nano_v9
+from cmsdb.campaigns.run2_2017_nano_local_v9 import campaign_run2_2017_nano_v9
 
 # copy the campaign
 # (creates copies of all linked datasets, processes, etc. to allow for encapsulated customization)
@@ -103,6 +103,7 @@ dataset_names = [
     # backgrounds
     "tt_sl_powheg",
     "tt_dl_powheg",
+    "dy_lep_m50_1j_madgraph",
     "dy_lep_0j_amcatnlo",
     "dy_lep_1j_amcatnlo",
     "dy_lep_2j_amcatnlo",
@@ -304,3 +305,34 @@ else:
 # add met filters
 from hcp.config.met_filters import add_met_filters
 add_met_filters(cfg)
+
+
+def get_dataset_lfns(
+        dataset_inst: od.Dataset,
+        shift_inst: od.Shift,
+        dataset_key: str,
+) -> list[str]:
+    # destructure dataset_key into parts and create the lfn base directory
+    dataset_id, full_campaign, tier = dataset_key.split("/")[1:]
+    main_campaign, sub_campaign = full_campaign.split("-", 1)
+    print(dataset_id, full_campaign, tier)
+    lfn_base = law.wlcg.WLCGDirectoryTarget(
+        #f"/store/{dataset_inst.data_source}/{main_campaign}/{dataset_id}/{tier}/{sub_campaign}/0",
+        f"/eos/user/g/gsaha3/Exotic/HCP_Test/UL2017/{dataset_id}/{full_campaign}/{tier}",
+        fs=f"local",
+    )
+    print(os.listdir(f"/eos/user/g/gsaha3/Exotic/HCP_Test/UL2017/{dataset_id}/{full_campaign}/{tier}"))
+    # loop though files and interpret paths as lfns
+    paths = [lfn_base.child(basename, type="f").path for basename in lfn_base.listdir(pattern="*.root")]
+    print(paths)
+    return paths
+    
+# define the lfn retrieval function
+cfg.x.get_dataset_lfns = get_dataset_lfns
+
+# define a custom sandbox
+#cfg.x.get_dataset_lfns_sandbox = dev_sandbox("bash::$CF_BASE/sandboxes/cf.sh")
+
+# define custom remote fs's to look at
+#cfg.x.get_dataset_lfns_remote_fs = lambda dataset_inst: f"wlcg_fs_{cfg.campaign.x.custom['name']}"
+#cfg.x.get_dataset_lfns_remote_fs = lambda dataset_inst: f"{local_fs}"

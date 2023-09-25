@@ -148,6 +148,7 @@ def add_triggers_2017(config: od.Config) -> None:
         #
         # mu mu
         #
+        
         Trigger(
             name="HLT_Mu19_TrkIsoVVL_Mu9_TrkIsoVVL_DZ",
             id=301,

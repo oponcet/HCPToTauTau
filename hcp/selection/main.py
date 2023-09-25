@@ -53,10 +53,10 @@ def main(
         results += json_filter_results
 
     # met filter selection
-    events, met_filter_results = self[met_filters](events, **kwargs)
-    results += met_filter_results
+    #########events, met_filter_results = self[met_filters](events, **kwargs)
+    #########results += met_filter_results
 
-    event_sel_json_and_met_filter = reduce(and_, results.steps.values())
+    #event_sel_json_and_met_filter = reduce(and_, results.steps.values())
 
     # trigger selection
     events, trigger_results = self[trigger_selection](events, **kwargs)
@@ -90,7 +90,7 @@ def main(
     # increment stats
     weight_map = {
         "num_events": Ellipsis,
-        "num_events_json_met_filter": event_sel_json_and_met_filter,
+        #"num_events_json_met_filter": event_sel_json_and_met_filter,
         "num_events_json_met_filter_trigger": event_sel_json_and_met_filter_and_trigger,
         "num_events_selected": event_sel,
     }
