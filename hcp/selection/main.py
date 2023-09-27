@@ -46,7 +46,7 @@ def main(
 ) -> tuple[ak.Array, SelectionResult]:
     # prepare the selection results that are updated at every step
     results = SelectionResult()
-
+    print("stage-0")
     # filter bad data events according to golden lumi mask
     if self.dataset_inst.is_data:
         events, json_filter_results = self[json_filter](events, **kwargs)
@@ -61,17 +61,17 @@ def main(
     # trigger selection
     events, trigger_results = self[trigger_selection](events, **kwargs)
     results += trigger_results
-
+    print("stage-1")
     event_sel_json_and_met_filter_and_trigger = reduce(and_, results.steps.values())
 
     # lepton selection
     events, lepton_results = self[lepton_selection](events, trigger_results, **kwargs)
     results += lepton_results
-    
+    print("stage-2")
     # jet selection
     events, jet_results = self[jet_selection](events, **kwargs)
     results += jet_results
-
+    print("stage-3")
     # combined event selection after all steps
     # results.main["event"] = results.steps.muon & results.steps.jet
     event_sel = reduce(and_, results.steps.values())
@@ -79,14 +79,19 @@ def main(
 
     # create process ids
     events = self[process_ids](events, **kwargs)
-
+    print("stage-4")
     # add the mc weight
-    if self.dataset_inst.is_mc:
-        events = self[mc_weight](events, **kwargs)
+    #if self.dataset_inst.is_mc:
+    #    events = self[mc_weight](events, **kwargs)
+    #print("stage-5")
 
+    # create process ids
+    events = self[process_ids](events, **kwargs)
+    print("stage-5")
+    print(f"SelRes objects: {results.objects}")
     # add cutflow features, passing per-object masks
     events = self[cutflow_features](events, results.objects, **kwargs)
-
+    print("stage-7")
     # increment stats
     weight_map = {
         "num_events": Ellipsis,

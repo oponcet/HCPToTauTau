@@ -38,12 +38,12 @@ def trigger_selection(
 
     # index of TrigObj's to repeatedly convert masks to indices
     index = ak.local_index(events.TrigObj)
-
+    
     for trigger in self.config_inst.x.triggers:
         # skip the trigger if it does not apply to the dataset
         if not trigger.applies_to_dataset(self.dataset_inst):
             continue
-
+        
         # get bare decisions
         fired = events.HLT[trigger.hlt_field] == 1
         any_fired = any_fired | fired

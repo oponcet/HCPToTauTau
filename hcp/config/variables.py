@@ -39,7 +39,7 @@ def add_lepton_features(cfg: od.Config) -> None:
     """
     Adds lepton features only
     """
-    for obj in ["Electron", "Muon"]:
+    for obj in ["Electron", "Muon", "Tau"]:
         for i in range(2):
             cfg.add_variable(
                 name=f"{obj.lower()}_{i+1}_pt",

@@ -29,17 +29,24 @@ def add_categories(config: od.Config) -> None:
     )
     add_category(
         config,
-        name="ele_ele",
+        name="ele_tau",
         id=101,
-        selection="sel_ee",
-        label="ee_channel",
+        selection="sel_etau",
+        label="etau_channel",
     )
     add_category(
         config,
-        name="mu_mu",
+        name="mu_tau",
         id=102,
-        selection="sel_mm",
-        label="mm_channel",
+        selection="sel_mutau",
+        label="mutau_channel",
+    )
+    add_category(
+        config,
+        name="tau_tau",
+        id=103,
+        selection="sel_tautau",
+        label="tautau_channel",
     )
     add_category(
         config,
@@ -48,10 +55,10 @@ def add_categories(config: od.Config) -> None:
         selection="sel_os",
         label="os_channel",
     )
-    add_category(
-        config,
-        name="ss",
-        id=202,
-        selection="sel_ss",
-        label="ss_channel",
-    )
+    #add_category(
+    #    config,
+    #    name="ss",
+    #    id=202,
+    #    selection="sel_ss",
+    #    label="ss_channel",
+    #)
