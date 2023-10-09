@@ -71,7 +71,7 @@ def muon_selection(
             min_pt = 33.0 if is_single else 25.0
         default_mask = (
             (events.Muon.tightId == 1) &
-            (abs(events.Muon.eta) < 2.1) &
+            (abs(events.Muon.eta) < 2.4) &
             (abs(events.Muon.dxy) < 0.045) &
             (abs(events.Muon.dz) < 0.2) &
             (events.Muon.pfRelIso04_all < 0.15) &
@@ -272,6 +272,7 @@ def tau_selection(
         (abs(events.Tau.eta) < max_eta) &
         (events.Tau.pt > min_pt) &
         (abs(events.Tau.dz) < 0.2) &
+        #(events.Tau.decayModeFindingNewDMs >= 0.5) &
         (events.Tau.idDeepTau2017v2p1VSe >= (tau_vs_e.vvloose if is_any_cross_tau else tau_vs_e.vloose)) &
         (events.Tau.idDeepTau2017v2p1VSmu >= (tau_vs_mu.vloose if is_any_cross_tau else tau_vs_mu.tight)) &
         (events.Tau.idDeepTau2017v2p1VSjet >= tau_vs_jet.loose)
@@ -310,7 +311,7 @@ def tau_selection(
 
     return base_indices, iso_mask
 
-"""
+
 @tau_selection.init
 def tau_selection_init(self: Selector) -> None:
     # register tec shifts
@@ -319,7 +320,7 @@ def tau_selection_init(self: Selector) -> None:
         for shift_inst in self.config_inst.shifts
         if shift_inst.has_tag("tec")
     }
-"""
+
 
 @selector(
     uses={
@@ -410,12 +411,24 @@ def lepton_selection(
         if trigger.has_tag({"single_e", "cross_e_tau"}):
             # expect 1 electron, 1 veto electron (the same one), 0 veto muons, and at least one tau
             is_etau = (
-                trigger_fired &
-                (ak.num(electron_indices, axis=1) == 1) &
-                (ak.num(electron_veto_indices, axis=1) == 1) &
-                (ak.num(muon_veto_indices, axis=1) == 0) &
-                (ak.num(tau_indices, axis=1) >= 1)
+                trigger_fired
+                & (ak.num(electron_indices, axis=1) == 1)
+                & (ak.num(electron_veto_indices, axis=1) == 1)
+                & (ak.num(muon_veto_indices, axis=1) == 0)
+                & (ak.num(tau_indices, axis=1) >= 1)
             )
+            #dr_etau = events.Electron[electron_indices].metric_table(events.Tau[tau_indices])
+            #dr_taue = events.Tau[tau_indices].metric_table(events.Electron[electron_indices])
+            #chr_etau = events.Electron[electron_indices].metric_table(events.Tau[tau_indices], metric=lambda a, b: a.charge + b.charge)
+            #chr_taue = events.Tau[tau_indices].metric_table(events.Electron[electron_indices], metric=lambda a, b: a.charge + b.charge)
+            #dr_etau_mask = ak.any(dr_etau > 0.5, axis=2)
+            #dr_taue_mask = ak.any(dr_taue > 0.5, axis=2)
+            #chr_etau_mask = ak.any(chr_etau == 0, axis=2)
+            #chr_taue_mask = ak.any(chr_taue == 0, axis=2)
+            #print(f"dr_etau_mask: {dr_etau_mask.type}")
+            #print(f"dr_taue_mask: {dr_taue_mask.type}")
+            #electron_indices = electron_indices[(dr_etau_mask & chr_etau_mask)]
+            #tau_indices = tau_indices[(dr_taue_mask & chr_taue_mask)]
             is_iso = ak.sum(tau_iso_mask, axis=1) >= 1
             # determine the os/ss charge sign relation
             e_charge = ak.firsts(events.Electron[electron_indices].charge, axis=1)
@@ -423,6 +436,9 @@ def lepton_selection(
             is_os = e_charge == -tau_charge
             # store global variables
             where = (channel_id == 0) & is_etau
+            #print(f"e-charge: {e_charge} | {e_charge.type}")
+            #print(f"tau-charge: {tau_charge} | {tau_charge.type}")
+            #print(f"WHERE: {where}")
             channel_id = ak.where(where, ch_etau.id, channel_id)
             tau2_isolated = ak.where(where, is_iso, tau2_isolated)
             leptons_os = ak.where(where, is_os, leptons_os)
@@ -518,6 +534,8 @@ def lepton_selection(
     events = set_ak_column(events, "m_ll", m_ll)
     events = set_ak_column(events, "dr_ll", dr_ll)
 
+    print(f"end of lep sel: \nElectron: {events.Electron[sel_electron_indices].type} \n\nMuon: {events.Muon[sel_muon_indices].type} \n\nTau: {events.Tau[sel_tau_indices].type}")
+    
     return events, SelectionResult(
         steps={
             "lepton": channel_id != 0,
@@ -538,186 +556,20 @@ def lepton_selection(
             # multiplication of a coffea particle with 1 yields the lorentz vector
             "lepton_pair": ak.concatenate(
                 [
-                    events.Electron[sel_electron_indices] * 1,
-                    events.Muon[sel_muon_indices] * 1,
-                    events.Tau[sel_tau_indices] * 1,
+                    events.Electron[sel_electron_indices][:,np.newaxis,:],
+                    events.Muon[sel_muon_indices][:,np.newaxis,:],
+                    events.Tau[sel_tau_indices][:,np.newaxis,:],
                 ],
                 axis=1,
             ),
+            #"lepton_pair": ak.concatenate(
+            #    [
+            #        events.Electron[sel_electron_indices] * 1,
+            #        events.Muon[sel_muon_indices] * 1,
+            #        events.Tau[sel_tau_indices] * 1,
+            #    ],
+            #    axis=1,
+            #),
         },
     )
-
-
-
-
-
-
-"""
     
-@selector(
-    uses={
-        electron_selection, muon_selection,
-        # nano columns
-        "event", "Electron.charge", "Muon.charge", "Electron.mass", "Muon.mass",
-    },
-    produces={
-        electron_selection, muon_selection,
-        # new columns
-        "channel_id", "leptons_os", "leptons_ss", "single_triggered", "double_triggered",
-        "m_ll", "dr_ll",
-    },
-)
-def lepton_selection(
-    self: Selector,
-    events: ak.Array,
-    trigger_results: SelectionResult,
-    **kwargs,
-) -> tuple[ak.Array, SelectionResult]:
-    
-    #Combined lepton selection.
-    
-    # get channels from the config
-    ch_ee = self.config_inst.get_channel("ee")
-    ch_mumu = self.config_inst.get_channel("mumu")
-
-    # prepare vectors for output vectors
-    false_mask = (abs(events.event) < 0)
-    channel_id = np.uint8(1) * false_mask
-    leptons_os = false_mask
-    leptons_ss = false_mask
-    single_triggered = false_mask
-    double_triggered = false_mask
-    empty_indices = ak.zeros_like(1 * events.event, dtype=np.uint16)[..., None][..., :0]
-    sel_electron_indices = empty_indices
-    sel_muon_indices = empty_indices
-    m_ll = false_mask
-    dr_ll = false_mask
-    
-    # perform each lepton election step separately per trigger
-    for trigger, trigger_fired, leg_masks in trigger_results.x.trigger_data:
-        is_single = trigger.has_tag("single_trigger")
-        is_double = trigger.has_tag("double_trigger")
-
-        # electron selection
-        electron_indices, electron_veto_indices = self[electron_selection](
-            events,
-            trigger,
-            leg_masks,
-            call_force=True,
-            **kwargs,
-        )
-
-        # muon selection
-        muon_indices, muon_veto_indices = self[muon_selection](
-            events,
-            trigger,
-            leg_masks,
-            call_force=True,
-            **kwargs,
-        )
-        #print(f"muon_indices: {muon_indices}")
-        
-        # lepton pair selecton per trigger via lepton counting
-        if trigger.has_tag({"single_e", "double_e_e"}):
-            # expect 1 electron, 1 veto electron (the same one), 0 veto muons
-            is_ee = (
-                trigger_fired &
-                (ak.num(electron_indices, axis=1) == 2) &
-                (ak.num(electron_veto_indices, axis=1) == 2) &
-                (ak.num(muon_veto_indices, axis=1) == 0) &
-                (invariant_mass(events.Electron[electron_indices]) > 10) &
-                (invariant_mass(events.Electron[electron_indices]) < 160)
-            )
-            # determine the os/ss charge sign relation
-            is_os = ak.sum(events.Electron[electron_indices].charge, axis=-1) == 0
-            #print(f"is_os: {is_os}")
-            is_ss = ak.sum(events.Electron[electron_indices].charge, axis=-1) != 0
-            # store global variables
-            where = (channel_id == 0) & is_ee
-            channel_id = ak.where(where, ch_ee.id, channel_id)
-            leptons_os = ak.where(where, is_os, leptons_os)
-            leptons_ss = ak.where(where, is_ss, leptons_ss)
-            single_triggered = ak.where(where & is_single, True, single_triggered)
-            double_triggered = ak.where(where & is_double, True, double_triggered)
-            sel_electron_indices = ak.where(where, electron_indices, sel_electron_indices)
-            #print(f"Electrons: {events.Electron[sel_electron_indices]}")
-            _m_ll = invariant_mass(events.Electron[electron_indices])
-            m_ll = ak.where(where, _m_ll, m_ll)
-            _dr_ll = deltaR(events.Electron[electron_indices][:,:1], events.Electron[electron_indices][:,1:2]) 
-            dr_ll = ak.where(where, _dr_ll, dr_ll)
-            
-        elif trigger.has_tag({"single_mu", "double_mu_mu"}):
-            # expect 1 muon, 1 veto muon (the same one), 0 veto electrons
-            is_mumu = (
-                trigger_fired &
-                (ak.num(muon_indices, axis=1) == 2) &
-                (ak.num(muon_veto_indices, axis=1) == 2) &
-                (ak.num(electron_veto_indices, axis=1) == 0) &
-                (invariant_mass(events.Muon[muon_indices]) > 10) &
-                (invariant_mass(events.Muon[muon_indices]) < 160)
-            )
-            # determine the os/ss charge sign relation
-            is_os = ak.sum(events.Muon[muon_indices].charge, axis=-1) == 0
-            is_ss = ak.sum(events.Muon[muon_indices].charge, axis=-1) != 0
-            # store global variables
-            where = (channel_id == 0) & is_mumu
-            channel_id = ak.where(where, ch_mumu.id, channel_id)
-            leptons_os = ak.where(where, is_os, leptons_os)
-            leptons_ss = ak.where(where, is_ss, leptons_ss)
-            single_triggered = ak.where(where & is_single, True, single_triggered)
-            double_triggered = ak.where(where & is_double, True, double_triggered)
-            sel_muon_indices = ak.where(where, muon_indices, sel_muon_indices)
-            _m_ll = invariant_mass(events.Muon[muon_indices])
-            m_ll = ak.where(where, _m_ll, m_ll)
-            _dr_ll = deltaR(events.Muon[muon_indices][:,:1], events.Muon[muon_indices][:,1:2])
-            dr_ll = ak.where(where, _dr_ll, dr_ll)
-            
-    # some final type conversions
-    channel_id = ak.values_astype(channel_id, np.uint8)
-    leptons_os = ak.fill_none(leptons_os, False)
-    leptons_ss = ak.fill_none(leptons_ss, False)
-    sel_electron_indices = ak.values_astype(sel_electron_indices, np.int32)
-    sel_muon_indices = ak.values_astype(sel_muon_indices, np.int32)
-    m_ll = ak.values_astype(m_ll, np.float32)
-    #print(f"m_ll: {m_ll}")
-    dr_ll = ak.values_astype(dr_ll, np.float32)
-    #print(f"dr_ll: {dr_ll}")
-
-    #print(f"channelId: {channel_id}")
-    #print(f"leptons_os: {leptons_os}")
-    # save new columns
-    events = set_ak_column(events, "channel_id", channel_id)
-    events = set_ak_column(events, "leptons_os", leptons_os)
-    events = set_ak_column(events, "leptons_ss", leptons_ss)
-    events = set_ak_column(events, "single_triggered", single_triggered)
-    events = set_ak_column(events, "double_triggered", double_triggered)
-    events = set_ak_column(events, "m_ll", m_ll)
-    events = set_ak_column(events, "dr_ll", dr_ll)
-    
-    #print(f"Column m_ll: {events.m_ll}")
-    
-    return events, SelectionResult(
-        steps={
-            "lepton": channel_id != 0,
-        },
-        objects={
-            "Electron": {
-                "Electron": sel_electron_indices,
-            },
-            "Muon": {
-                "Muon": sel_muon_indices,
-            },
-        },
-        aux={
-            # save the selected lepton pair for the duration of the selection
-            # multiplication of a coffea particle with 1 yields the lorentz vector
-            "lepton_pair": ak.concatenate(
-                [
-                    events.Electron[sel_electron_indices] * 1,
-                    events.Muon[sel_muon_indices] * 1,
-                ],
-                axis=1,
-            ),
-        },
-    )
-"""

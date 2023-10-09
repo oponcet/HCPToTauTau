@@ -21,6 +21,8 @@ from hcp.selection.lepton import lepton_selection
 from hcp.selection.jet import jet_selection
 from hcp.production.main import cutflow_features
 
+from hcp.production.prepare_objects import buildhcand
+
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
 
@@ -31,10 +33,12 @@ ak = maybe_import("awkward")
         json_filter, met_filters, mc_weight, cutflow_features, process_ids, trigger_selection,
         lepton_selection, jet_selection,
         increment_stats,
+        buildhcand,
     },
     produces={
         # selectors / producers whose newly created columns should be kept
         mc_weight, lepton_selection, trigger_selection, cutflow_features, process_ids,
+        #events.hcand
     },
     exposed=True,
 )
@@ -68,10 +72,14 @@ def main(
     events, lepton_results = self[lepton_selection](events, trigger_results, **kwargs)
     results += lepton_results
     print("stage-2")
+
+    events = self[buildhcand](events, lepton_results.x.lepton_pair, **kwargs)
+
     # jet selection
     events, jet_results = self[jet_selection](events, **kwargs)
     results += jet_results
     print("stage-3")
+    sys.exit()
     # combined event selection after all steps
     # results.main["event"] = results.steps.muon & results.steps.jet
     event_sel = reduce(and_, results.steps.values())
