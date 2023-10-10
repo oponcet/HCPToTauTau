@@ -38,7 +38,8 @@ ak = maybe_import("awkward")
     produces={
         # selectors / producers whose newly created columns should be kept
         mc_weight, lepton_selection, trigger_selection, cutflow_features, process_ids,
-        #events.hcand
+        buildhcand,
+        "hcand.*",
     },
     exposed=True,
 )
@@ -79,7 +80,7 @@ def main(
     events, jet_results = self[jet_selection](events, **kwargs)
     results += jet_results
     print("stage-3")
-    sys.exit()
+    #sys.exit()
     # combined event selection after all steps
     # results.main["event"] = results.steps.muon & results.steps.jet
     event_sel = reduce(and_, results.steps.values())

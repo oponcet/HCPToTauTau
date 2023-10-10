@@ -218,10 +218,11 @@ def add_config(
             "deterministic_seed", "process_id", "mc_weight", "cutflow.*", "channel_id",
             "leptons_os", "single_triggered", "cross_triggered",
             "tau2_isolated", "m_ll", "dr_ll",
+            "hcand.pt", "hcand.eta", "hcand.phi", "hcand.mass",
         },
         "cf.MergeSelectionMasks": {
             "normalization_weight", "process_id", "category_ids", "channel_id", "cutflow.*",
-            "leptons_os", "m_ll", "dr_ll",
+            "leptons_os", "m_ll", "dr_ll", "hcand.pt", "hcand.eta",
         },
         "cf.UniteColumns": {
             "*",

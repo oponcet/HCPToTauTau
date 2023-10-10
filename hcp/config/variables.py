@@ -193,6 +193,29 @@ def add_cutflow_features(cfg: od.Config) -> None:
     )
 
 
+def add_hcand_features(cfg: od.Config) -> None:
+    """
+    Adds h lepton features only
+    """
+    for i in range(2):
+        cfg.add_variable(
+            name=f"hlepton_{i+1}_pt",
+            expression=f"hcand.pt[:,{i}]",
+            null_value=EMPTY_FLOAT,
+            binning=(40, 0., 200.),
+            unit="GeV",
+            x_title=f"lepton_{i+1}" + r" $p_{T}$",
+        )
+        cfg.add_variable(
+            name=f"hlepton_{i+1}_eta",
+            expression=f"hcand.eta[:,{i}]",
+            null_value=EMPTY_FLOAT,
+            binning=(25, -2.5, 2.5),
+            unit="GeV",
+            x_title=f"lepton_{i+1}" + r" $\eta$",
+        )
+
+    
 def add_variables(cfg: od.Config) -> None:
     """
     Adds all variables to a *config*.
@@ -201,5 +224,6 @@ def add_variables(cfg: od.Config) -> None:
     add_lepton_features(cfg)
     add_jet_features(cfg)
     add_highlevel_features(cfg)
+    add_hcand_features(cfg)
     add_weight_features(cfg)
     add_cutflow_features(cfg)
