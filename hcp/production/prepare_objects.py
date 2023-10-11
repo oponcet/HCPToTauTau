@@ -12,6 +12,7 @@ from columnflow.production.normalization import normalization_weights
 from columnflow.production.cms.seeds import deterministic_seeds
 from columnflow.production.cms.mc_weight import mc_weight
 from columnflow.production.cms.muon import muon_weights
+from columnflow.selection import SelectionResult
 from columnflow.selection.util import create_collections_from_masks
 from columnflow.util import maybe_import
 from columnflow.columnar_util import EMPTY_FLOAT, Route, set_ak_column
@@ -27,6 +28,14 @@ maybe_import("coffea.nanoevents.methods.nanoaod")
 set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
 set_ak_column_i32 = functools.partial(set_ak_column, value_type=np.int32)
 
+def selpairs(dtrpairs: ak.Array)->ak.Array:
+    lep1unzip, lep2unzip = ak.unzip(dtrpairs)
+    charge_mask = (lep1unzip.charge + lep2unzip.charge) == 0
+    invm_mask = (1*lep1unzip + 1*lep2unzip).mass > 40
+    dtr_mask = (charge_mask & invm_mask)
+    dtrpairs = dtrpairs[dtr_mask]
+    return dtrpairs
+
 
 @producer(
     uses={
@@ -34,21 +43,23 @@ set_ak_column_i32 = functools.partial(set_ak_column, value_type=np.int32)
         "Electron.pt", "Electron.pfRelIso03_all",
         "Muon.pt", "Muon.pfRelIso03_all",
         "Tau.pt", "Tau.rawDeepTau2017v2p1VSjet",
+        #selpairs,
     },
-    #produces={
-    #    "h_cand.pt", "h_cand.eta", "h_cand.phi", "h_cand.mass", "h_cand.charge",
-    #}
 )
 def buildhcand(self: Producer,
                events: ak.Array,
-               lepton_pair: ak.Array,
+               selres: SelectionResult,
                **kwargs) -> ak.Array:
     print("Started building h-cand")
     #empty_indices = ak.zeros_like(1*events.channel_id, dtype=np.uint16)[..., None][..., :0]
     #empty_indices = ak.zeros_like(1*events.Electron)
+    Electrons = selres.x.Electrons
+    Muons = selres.x.Muons
+    Taus = selres.x.Taus
+    
     empty_indices = ak.zeros_like(
         ak.singletons(
-            ak.firsts(1*events.Electron, axis=1)
+            ak.firsts(Electrons, axis=1)
         )
     )
     #from IPython import embed; embed()
@@ -61,22 +72,18 @@ def buildhcand(self: Producer,
 
         if (ch == "etau"):
             print(f"channel: {ch}")
-            #assert (ch == self.config_inst.get_channel(ch).name), "Should be etau channel"
+            assert (ch == self.config_inst.get_channel(ch).name), "Should be etau channel"
             where = (events.channel_id == self.config_inst.get_channel(ch).id)
             nlep_mask = (
-                (ak.num(events.Electron, axis=-1) >= 1)
-                & (ak.num(events.Tau, axis=-1) >= 1)
-                & (ak.num(events.Muon, axis=-1) == 0)
+                (ak.num(Electrons, axis=-1) == 1)
+                & (ak.num(Taus, axis=-1) >= 1)
+                & (ak.num(Muons, axis=-1) == 0)
             )
             where = where & nlep_mask
-            leps1 = events.Electron
-            leps2 = events.Tau
+            leps1 = Electrons
+            leps2 = Taus
             dtrpairs = ak.cartesian([leps1, leps2], axis=1)
-            lep1unzip, lep2unzip = ak.unzip(dtrpairs)
-            charge_mask = (lep1unzip.charge + lep2unzip.charge) == 0
-            invm_mask = (1*lep1unzip + 1*lep2unzip).mass > 40
-            dtr_mask = (charge_mask & invm_mask)
-            dtrpairs = dtrpairs[dtr_mask]
+            dtrpairs = selpairs(dtrpairs)
             print(f"""dtrpairs["0"] fields: {dtrpairs["0"].fields}""")
             print(f"""dtrpairs["1"] fields: {dtrpairs["1"].fields}""")
             iso_sort_idx_1 = ak.argsort(dtrpairs["0"].pfRelIso03_all, ascending=True)
@@ -93,26 +100,22 @@ def buildhcand(self: Producer,
             print(f"lep2 pt: {lep2.pt}")
             dtrpair = ak.concatenate([lep1, lep2], axis=1) 
             print(f"dtrpair pt: {dtrpair.pt}")
-            h_cand = ak.where(where, 1*dtrpair, h_cand)
+            h_cand = ak.where(where, dtrpair, h_cand)
         
         elif (ch == "mutau"):
             print(f"channel: {ch}")
-            #assert (ch == self.config_inst.get_channel(ch).name), "Should be mutau channel"
+            assert (ch == self.config_inst.get_channel(ch).name), "Should be mutau channel"
             where = (events.channel_id == self.config_inst.get_channel(ch).id)
             nlep_mask = (
-                (ak.num(events.Electron, axis=-1) == 0)
-                & (ak.num(events.Tau, axis=-1) >= 1)
-                & (ak.num(events.Muon, axis=-1) >= 1)
+                (ak.num(Electrons, axis=-1) == 0)
+                & (ak.num(Taus, axis=-1) >= 1)
+                & (ak.num(Muons, axis=-1) == 1)
             )
             where = where & nlep_mask
-            leps1 = events.Muon
-            leps2 = events.Tau
+            leps1 = Muons
+            leps2 = Taus
             dtrpairs = ak.cartesian([leps1, leps2], axis=1)
-            lep1unzip, lep2unzip = ak.unzip(dtrpairs)
-            charge_mask = (lep1unzip.charge + lep2unzip.charge) == 0
-            invm_mask = (1*lep1unzip + 1*lep2unzip).mass > 40
-            dtr_mask = (charge_mask & invm_mask)
-            dtrpairs = dtrpairs[dtr_mask]
+            dtrpairs = selpairs(dtrpairs)
             print(f"""dtrpairs["0"] fields: {dtrpairs["0"].fields}""")
             print(f"""dtrpairs["1"] fields: {dtrpairs["1"].fields}""")
             iso_sort_idx_1 = ak.argsort(dtrpairs["0"].pfRelIso03_all, ascending=True)
@@ -129,25 +132,21 @@ def buildhcand(self: Producer,
             print(f"lep2 pt: {lep2.pt}")
             dtrpair = ak.concatenate([lep1, lep2], axis=1) 
             print(f"dtrpair pt: {dtrpair.pt}")
-            h_cand = ak.where(where, 1*dtrpair, h_cand)
+            h_cand = ak.where(where, dtrpair, h_cand)
             
         elif (ch == "tautau"):
             print(f"channel: {ch}")
-            #assert (ch == self.config_inst.get_channel(ch).name), "Should be tautau channel"
+            assert (ch == self.config_inst.get_channel(ch).name), "Should be tautau channel"
             where = (events.channel_id == self.config_inst.get_channel(ch).id)
             nlep_mask = (
-                (ak.num(events.Electron, axis=-1) == 0)
-                & (ak.num(events.Tau, axis=-1) >= 2)
-                & (ak.num(events.Muon, axis=-1) == 0)
+                (ak.num(Electrons, axis=-1) == 0)
+                & (ak.num(Taus, axis=-1) >= 2)
+                & (ak.num(Muons, axis=-1) == 0)
             )
             where = where & nlep_mask
-            leps1 = leps2 = events.Tau
+            leps1 = leps2 = Taus
             dtrpairs = ak.combinations(leps1, 2, axis=-1)
-            lep1unzip, lep2unzip = ak.unzip(dtrpairs)
-            charge_mask = (lep1unzip.charge + lep2unzip.charge) == 0
-            invm_mask = (1*lep1unzip + 1*lep2unzip).mass > 40
-            dtr_mask = (charge_mask & invm_mask)
-            dtrpairs = dtrpairs[dtr_mask]
+            dtrpairs = selpairs(dtrpairs)
             print(f"""dtrpairs["0"] fields: {dtrpairs["0"].fields}""")
             print(f"""dtrpairs["1"] fields: {dtrpairs["1"].fields}""")
             iso_sort_idx_1 = ak.argsort(dtrpairs["0"].rawDeepTau2017v2p1VSjet, ascending=True)
@@ -164,18 +163,8 @@ def buildhcand(self: Producer,
             print(f"lep2 pt: {lep2.pt}")
             dtrpair = ak.concatenate([lep1, lep2], axis=1) 
             print(f"dtrpair pt: {dtrpair.pt}")
-            #from IPython import embed; embed()
-            h_cand = ak.where(where, 1*dtrpair, h_cand)
+            h_cand = ak.where(where, dtrpair, h_cand)
 
-    #print(f"h_cand: {h_cand.type}")
-    #print(f"h_cand: {ak.max(ak.num(h_cand,axis=-1))}")
-
-    #for i in range(1000):
-    #print(h_dtr_pairs[861], h_dtr_pairs[861]["0"], h_dtr_pairs[861]["1"])
-    #for i in range(10000):
-    #    print(i, h_dtr_pairs[i])
-    
-    #print(f"hlep2: {hlep2.layout}")
     print(f"h_cand : {h_cand.fields}")
     events = set_ak_column(events, "hcand", h_cand)
     #from IPython import embed; embed()

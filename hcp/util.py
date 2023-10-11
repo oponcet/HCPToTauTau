@@ -46,7 +46,7 @@ def invariant_mass(events: ak.Array):
 
 def new_invariant_mass(objs1: ak.Array, objs2: ak.Array):
     lep_lep = ak.concatenate([objs1, objs2], axis=1)
-    empty_events = ak.zeros_like(lep_lep, dtype=np.uint16)[:, 0:0]
+    empty_events = ak.zeros_like(lep_lep, dtype=np.float32)[:, 0:0]
     where = ak.num(lep_lep, axis=1) == 2
     events = ak.where(where, lep_lep, empty_events)
     mass = ak.fill_none(ak.firsts((1 * events[:, :1] + 1 * events[:, 1:2]).mass), 0)
@@ -59,6 +59,7 @@ def get_dataset_lfns(
         dataset_key: str,
 ) -> list[str]:
     # destructure dataset_key into parts and create the lfn base directory
+
     dataset_id, full_campaign, tier = dataset_key.split("/")[1:]
     main_campaign, sub_campaign = full_campaign.split("-", 1)
     print(dataset_id, full_campaign, tier)

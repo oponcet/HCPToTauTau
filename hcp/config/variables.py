@@ -214,6 +214,19 @@ def add_hcand_features(cfg: od.Config) -> None:
             unit="GeV",
             x_title=f"lepton_{i+1}" + r" $\eta$",
         )
+    cfg.add_variable(
+        name="hcand_invmass",
+        null_value=EMPTY_FLOAT,
+        binning=(50, 0, 400),
+        unit="GeV",
+        x_title=r"$m_{ll}$",
+    )
+    cfg.add_variable(
+        name="hcand_dr",
+        null_value=EMPTY_FLOAT,
+        binning=(40, 0, 5),
+        x_title=r"$\Delta R(l,l)$",
+    )
 
     
 def add_variables(cfg: od.Config) -> None:

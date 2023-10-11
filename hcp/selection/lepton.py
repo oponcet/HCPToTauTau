@@ -430,6 +430,7 @@ def lepton_selection(
             #electron_indices = electron_indices[(dr_etau_mask & chr_etau_mask)]
             #tau_indices = tau_indices[(dr_taue_mask & chr_taue_mask)]
             is_iso = ak.sum(tau_iso_mask, axis=1) >= 1
+            #from IPython import embed; embed()
             # determine the os/ss charge sign relation
             e_charge = ak.firsts(events.Electron[electron_indices].charge, axis=1)
             tau_charge = ak.firsts(events.Tau[tau_indices].charge, axis=1)
@@ -520,9 +521,7 @@ def lepton_selection(
     sel_muon_indices = ak.values_astype(sel_muon_indices, np.int32)
     sel_tau_indices = ak.values_astype(sel_tau_indices, np.int32)
     m_ll = ak.values_astype(m_ll, np.float32)
-    #print(f"m_ll: {m_ll}")
     dr_ll = ak.values_astype(dr_ll, np.float32)
-    #print(f"dr_ll: {dr_ll}")
 
     
     # save new columns
@@ -534,8 +533,6 @@ def lepton_selection(
     events = set_ak_column(events, "m_ll", m_ll)
     events = set_ak_column(events, "dr_ll", dr_ll)
 
-    print(f"end of lep sel: \nElectron: {events.Electron[sel_electron_indices].type} \n\nMuon: {events.Muon[sel_muon_indices].type} \n\nTau: {events.Tau[sel_tau_indices].type}")
-    
     return events, SelectionResult(
         steps={
             "lepton": channel_id != 0,
@@ -552,24 +549,9 @@ def lepton_selection(
             },
         },
         aux={
-            # save the selected lepton pair for the duration of the selection
-            # multiplication of a coffea particle with 1 yields the lorentz vector
-            "lepton_pair": ak.concatenate(
-                [
-                    events.Electron[sel_electron_indices][:,np.newaxis,:],
-                    events.Muon[sel_muon_indices][:,np.newaxis,:],
-                    events.Tau[sel_tau_indices][:,np.newaxis,:],
-                ],
-                axis=1,
-            ),
-            #"lepton_pair": ak.concatenate(
-            #    [
-            #        events.Electron[sel_electron_indices] * 1,
-            #        events.Muon[sel_muon_indices] * 1,
-            #        events.Tau[sel_tau_indices] * 1,
-            #    ],
-            #    axis=1,
-            #),
+            "Electrons": events.Electron[sel_electron_indices],
+            "Muons": events.Muon[sel_muon_indices],
+            "Taus": events.Tau[sel_tau_indices],
         },
     )
     

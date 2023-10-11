@@ -73,8 +73,9 @@ def main(
     events, lepton_results = self[lepton_selection](events, trigger_results, **kwargs)
     results += lepton_results
     print("stage-2")
+    #from IPython import embed; embed()
 
-    events = self[buildhcand](events, lepton_results.x.lepton_pair, **kwargs)
+    events = self[buildhcand](events, lepton_results, **kwargs)
 
     # jet selection
     events, jet_results = self[jet_selection](events, **kwargs)
