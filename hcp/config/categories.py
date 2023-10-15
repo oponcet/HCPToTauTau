@@ -48,13 +48,13 @@ def add_categories(config: od.Config) -> None:
         selection="sel_tautau",
         label="tautau_channel",
     )
-    add_category(
-        config,
-        name="os",
-        id=201,
-        selection="sel_os",
-        label="os_channel",
-    )
+    #add_category(
+    #    config,
+    #    name="os",
+    #    id=201,
+    #    selection="sel_os",
+    #    label="os_channel",
+    #)
     #add_category(
     #    config,
     #    name="ss",

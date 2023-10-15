@@ -16,6 +16,7 @@ from columnflow.production.processes import process_ids
 from columnflow.production.cms.mc_weight import mc_weight
 from columnflow.util import maybe_import
 
+from hcp.selection.dl_veto import dilep_res_veto_selection
 from hcp.selection.trigger import trigger_selection
 from hcp.selection.lepton import lepton_selection
 from hcp.selection.jet import jet_selection
@@ -30,8 +31,8 @@ ak = maybe_import("awkward")
 @selector(
     uses={
         # selectors / producers called within _this_ selector
-        json_filter, met_filters, mc_weight, cutflow_features, process_ids, trigger_selection,
-        lepton_selection, jet_selection,
+        json_filter, met_filters, mc_weight, cutflow_features, process_ids,
+        trigger_selection, dilep_res_veto_selection, lepton_selection, jet_selection,
         increment_stats,
         buildhcand,
     },
@@ -63,20 +64,33 @@ def main(
 
     #event_sel_json_and_met_filter = reduce(and_, results.steps.values())
 
+    # dilepton_resonance_veto
+    events, dl_veto_results = self[dilep_res_veto_selection](events, **kwargs)
+    results += dl_veto_results
+    event_sel_json_and_met_filter_and_dlresveto = reduce(and_, results.steps.values())
+    
     # trigger selection
     events, trigger_results = self[trigger_selection](events, **kwargs)
     results += trigger_results
     print("stage-1")
-    event_sel_json_and_met_filter_and_trigger = reduce(and_, results.steps.values())
+    event_sel_json_and_met_filter_and_dlresveto_and_trigger = reduce(and_, results.steps.values())
 
     # lepton selection
     events, lepton_results = self[lepton_selection](events, trigger_results, **kwargs)
     results += lepton_results
+    event_sel_json_and_met_filter_and_dlresveto_and_trigger_and_lepton = reduce(and_, results.steps.values())
     print("stage-2")
     #from IPython import embed; embed()
 
     events = self[buildhcand](events, lepton_results, **kwargs)
-
+    hcand_results = SelectionResult(
+        steps={
+            "higgs_cand": ak.num(events.hcand) == 1,
+        },
+    )
+    results += hcand_results
+    event_sel_json_and_met_filter_and_dlresveto_and_trigger_and_lepton_and_hcand = reduce(and_, results.steps.values())
+    
     # jet selection
     events, jet_results = self[jet_selection](events, **kwargs)
     results += jet_results
@@ -84,6 +98,7 @@ def main(
     #sys.exit()
     # combined event selection after all steps
     # results.main["event"] = results.steps.muon & results.steps.jet
+
     event_sel = reduce(and_, results.steps.values())
     results.main["event"] = event_sel
 
@@ -106,7 +121,10 @@ def main(
     weight_map = {
         "num_events": Ellipsis,
         #"num_events_json_met_filter": event_sel_json_and_met_filter,
-        "num_events_json_met_filter_trigger": event_sel_json_and_met_filter_and_trigger,
+        "num_events_json_met_filter_dlresveto": event_sel_json_and_met_filter_and_dlresveto,
+        "num_events_json_met_filter_dlresveto_trigger": event_sel_json_and_met_filter_and_dlresveto_and_trigger,
+        "num_events_json_met_filter_dlresveto_trigger_lepton": event_sel_json_and_met_filter_and_dlresveto_and_trigger_and_lepton,
+        "num_events_json_met_filter_dlresveto_trigger_lepton_hcand": event_sel_json_and_met_filter_and_dlresveto_and_trigger_and_lepton_and_hcand,
         "num_events_selected": event_sel,
     }
     group_map = {}

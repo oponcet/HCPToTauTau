@@ -48,9 +48,9 @@ def sel_tautau(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array,
     return events, events["channel_id"] == ch.id
 
 
-@categorizer(uses={"leptons_os"})
-def sel_os(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    return events, events["leptons_os"] == True
+#@categorizer(uses={"leptons_os"})
+#def sel_os(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+#    return events, events["leptons_os"] == True
 
 
 #@categorizer(uses={"leptons_ss"})

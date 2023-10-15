@@ -24,7 +24,7 @@ def add_triggers_2017(config: od.Config) -> None:
             legs=[
                 TriggerLeg(
                     pdg_id=11,
-                    min_pt=30.0,
+                    min_pt=28.0,
                     # filter names:
                     # hltEle32L1DoubleEGWPTightGsfTrackIsoFilter
                     # hltEGL1SingleEGOrFilter
@@ -39,7 +39,7 @@ def add_triggers_2017(config: od.Config) -> None:
             legs=[
                 TriggerLeg(
                     pdg_id=11,
-                    min_pt=35.0,
+                    min_pt=28.0,
                     # filter names:
                     # hltEle32WPTightGsfTrackIsoFilter
                     trigger_bits=2 + 1024,
@@ -58,7 +58,7 @@ def add_triggers_2017(config: od.Config) -> None:
             legs=[
                 TriggerLeg(
                     pdg_id=13,
-                    min_pt=26.0,
+                    min_pt=25.0,
                     # filter names:
                     # hltL3crIsoL1sSingleMu22L1f0L2f10QL3f24QL3trkIsoFiltered0p07
                     trigger_bits=2,
@@ -72,7 +72,7 @@ def add_triggers_2017(config: od.Config) -> None:
             legs=[
                 TriggerLeg(
                     pdg_id=13,
-                    min_pt=29.0,
+                    min_pt=25.0,
                     # filter names:
                     # hltL3crIsoL1sMu22Or25L1f0L2f10QL3f27QL3trkIsoFiltered0p07
                     trigger_bits=2,
@@ -90,7 +90,7 @@ def add_triggers_2017(config: od.Config) -> None:
             legs=[
                 TriggerLeg(
                     pdg_id=11,
-                    min_pt=27.0,
+                    min_pt=25.0,
                     # filter names:
                     # hltEle24erWPTightGsfTrackIsoFilterForTau
                     # hltOverlapFilterIsoEle24WPTightGsfLooseIsoPFTau30
@@ -117,7 +117,7 @@ def add_triggers_2017(config: od.Config) -> None:
             legs=[
                 TriggerLeg(
                     pdg_id=13,
-                    min_pt=22.0,
+                    min_pt=21.0,
                     # filter names:
                     # hltL3crIsoL1sMu18erTau24erIorMu20erTau24erL1f0L2f10QL3f20QL3trkIsoFiltered0p07
                     # hltOverlapFilterIsoMu20LooseChargedIsoPFTau27L1Seeded

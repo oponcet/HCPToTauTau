@@ -16,7 +16,7 @@ ak = maybe_import("awkward")
 def trigger_object_matching(
     vectors1: ak.Array,
     vectors2: ak.Array,
-    threshold: float = 0.25,
+    threshold: float = 0.5,
     axis: int = 2,
 ) -> ak.Array:
     """

@@ -121,7 +121,7 @@ def add_config(
     # selector step groups for conveniently looping over certain steps
     # (used in cutflow tasks)
     cfg.x.selector_step_groups = {
-        "default": ["json", "met_filter", "trigger", "lepton", "jet"],
+        "default": ["json", "met_filter", "dl_res_veto", "trigger", "lepton", "jet"],
     }
 
     # custom method and sandbox for determining dataset lfns
@@ -152,6 +152,24 @@ def add_config(
             "lumi_13TeV_correlated": 0.02j,
         })
         
+
+    # b-tag working points
+    # https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation106XUL17?rev=15
+    cfg.x.btag_working_points = DotDict.wrap(
+        {
+            "deepjet": {
+                "loose": 0.0532,
+                "medium": 0.3040,
+                "tight": 0.7476,
+            },
+            "deepcsv": {
+                "loose": 0.1355,
+                "medium": 0.4506,
+                "tight": 0.7738,
+            },
+        },
+    )
+    
     # names of muon correction sets and working points
     # (used in the muon producer)
     cfg.x.muon_sf_names = ("NUM_TightRelIso_DEN_TightIDandIPCut", f"{year}_UL")
@@ -214,15 +232,17 @@ def add_config(
             "PV.npvs",
             # columns added during selection
             "deterministic_seed", "process_id", "mc_weight", "cutflow.*", "channel_id",
-            "leptons_os", "single_triggered", "cross_triggered",
+            "single_triggered", "cross_triggered",
             "tau2_isolated", "m_ll", "dr_ll",
             "hcand.pt", "hcand.eta", "hcand.phi", "hcand.mass", "hcand_invmass", "hcand_dr",
+            # "leptons_os",
         },
         "cf.MergeSelectionMasks": {
             "normalization_weight", "process_id", "category_ids", "channel_id", "cutflow.*",
-            "leptons_os", "m_ll", "dr_ll",
+            "m_ll", "dr_ll",
             "hcand.pt", "hcand.eta", "hcand.mass",
             "hcand_invmass", "hcand_dr",
+            # "leptons_os",
         },
         "cf.UniteColumns": {
             "*",
