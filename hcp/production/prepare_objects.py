@@ -284,6 +284,6 @@ def buildhcand(self: Producer,
 
     print(f"h_cand : {h_cand.fields}")
     events = set_ak_column(events, "hcand", h_cand)
-    from IPython import embed; embed()
+    #from IPython import embed; embed()
 
     return events
