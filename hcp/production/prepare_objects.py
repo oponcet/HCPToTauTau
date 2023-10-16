@@ -1,7 +1,7 @@
 # coding: utf-8
 
 """
-Prepare h-Candidate from SelectionResult: lepton_pair & channel_id 
+Prepare h-Candidate from SelectionResult: selected lepton indices & channel_id [trigger matched] 
 """
 
 import functools
@@ -112,10 +112,12 @@ def sort_and_get_pair_semilep(dtrpairs: ak.Array)->ak.Array:
 
 
 def sort_and_get_pair_fullhad(dtrpairs: ak.Array)->ak.Array:
+    # redundant, because taus were sorted by the deeptau before
     sorted_idx = ak.argsort(dtrpairs["0"].rawDeepTau2017v2p1VSjet, ascending=True)
     dtrpairs = dtrpairs[sorted_idx]
     where_many = ak.num(dtrpairs["0"], axis=1) > 1
-    
+
+    # if the deep tau val of tau-0 is the same for the first two pair
     where_same_iso_1 = (
         where_many &
         ak.fill_none(
@@ -126,11 +128,14 @@ def sort_and_get_pair_fullhad(dtrpairs: ak.Array)->ak.Array:
             ), False
         )
     )
+
+    # if so, sort the pairs according to the deep tau of the 2nd tau
     sorted_idx = ak.where(where_same_iso_1,
                           ak.argsort(dtrpairs["1"].rawDeepTau2017v2p1VSjet, ascending=False),
                           sorted_idx)
     dtrpairs = dtrpairs[sorted_idx]
 
+    # if the deep tau val of tau-1 is the same for the first two pair 
     where_same_iso_2 = (
         where_many &
         ak.fill_none(
@@ -141,13 +146,14 @@ def sort_and_get_pair_fullhad(dtrpairs: ak.Array)->ak.Array:
             ), False
         )
     )
+
+    # sort them with the pt of the 1st tau
     sorted_idx = ak.where(where_same_iso_2,
                           ak.argsort(dtrpairs["0"].pt, ascending=False),
                           sorted_idx)
     dtrpairs = dtrpairs[sorted_idx]
         
-    # if so, sort the pairs with tau rawDeepTau2017v2p1VSjet
-    # check if the first two pairs have taus with same rawDeepTau2017v2p1VSjet
+    # check if the first two pairs have the second tau with same rawDeepTau2017v2p1VSjet
     where_same_pt_1 = (
         where_many &
         ak.fill_none(
@@ -158,13 +164,14 @@ def sort_and_get_pair_fullhad(dtrpairs: ak.Array)->ak.Array:
             ), False
         )
     )
+
     # if so, sort the taus with their pt
     sorted_idx = ak.where(where_same_pt_1,
                           ak.argsort(dtrpairs["1"].pt, ascending=False),
                           sorted_idx)
+
     # finally, the pairs are sorted
     dtrpairs = dtrpairs[sorted_idx]
-    #from IPython import embed; embed() 
 
     lep1 = ak.singletons(ak.firsts(dtrpairs["0"], axis=1))
     lep2 = ak.singletons(ak.firsts(dtrpairs["1"], axis=1))
@@ -183,7 +190,6 @@ def sort_and_get_pair_fullhad(dtrpairs: ak.Array)->ak.Array:
         "Muon.pt", "Muon.pfRelIso03_all",
         "Tau.pt", "Tau.rawDeepTau2017v2p1VSjet",
         "MET.pt", "MET.phi",
-        #selpairs,
     },
 )
 def buildhcand(self: Producer,
@@ -202,17 +208,7 @@ def buildhcand(self: Producer,
             ak.firsts(Electrons, axis=1)
         )
     )
-    empty_indices_mu = ak.zeros_like(
-        ak.singletons(
-            ak.firsts(Muons, axis=1)
-        )
-    )
-    empty_indices_tau = ak.zeros_like(
-        ak.singletons(
-            ak.firsts(Taus, axis=1)
-        )
-    )
-    #from IPython import embed; embed()
+
     h_cand = empty_indices_ele[...,:0]
     print(f"h_cand | empty_indices: {h_cand}")
     channels = ["etau", "mutau", "tautau"]
@@ -231,31 +227,16 @@ def buildhcand(self: Producer,
             )
             #from IPython import embed; embed() 
             where = where & nlep_mask
-            leps1 = ak.where(where, Electrons, empty_indices_ele[...,:0])
-            leps2 = ak.where(where, Taus, empty_indices_tau[...,:0])
+            leps1 = Electrons
+            leps2 = Taus
             dtrpairs = ak.cartesian([leps1, leps2], axis=1)
             dtrpairs_sel = select_pairs(dtrpairs, events.MET, 50.0)
             print(f"""dtrpairs["0"] fields: {dtrpairs_sel["0"].fields}""")
             print(f"""dtrpairs["1"] fields: {dtrpairs_sel["1"].fields}""")
+
             dtrpair = sort_and_get_pair_semilep(dtrpairs_sel)
-            
-            ##from IPython import embed; embed()
-            #print(f"""dtrpairs["0"] fields: {dtrpairs["0"].fields}""")
-            #print(f"""dtrpairs["1"] fields: {dtrpairs["1"].fields}""")
-            #iso_sort_idx_1 = ak.argsort(dtrpairs["0"].pfRelIso03_all, ascending=True)
-            #dtrpairs = dtrpairs[iso_sort_idx_1]
-            #pt_sort_idx_1 = ak.argsort(dtrpairs["0"].pt, ascending=False)
-            #dtrpairs = dtrpairs[pt_sort_idx_1]
-            #iso_sort_idx_2 = ak.argsort(dtrpairs["1"].rawDeepTau2017v2p1VSjet, ascending=True)
-            #dtrpairs = dtrpairs[iso_sort_idx_2]
-            #pt_sort_idx_2 = ak.argsort(dtrpairs["1"].pt, ascending=False)
-            #dtrpairs = dtrpairs[pt_sort_idx_2]
-            #lep1 = ak.singletons(ak.firsts(dtrpairs["0"], axis=1))
-            #lep2 = ak.singletons(ak.firsts(dtrpairs["1"], axis=1))
-            #print(f"lep1 pt: {lep1.pt}")
-            #print(f"lep2 pt: {lep2.pt}")
-            #dtrpair = ak.concatenate([lep1, lep2], axis=1) 
             print(f"dtrpair pt: {dtrpair.pt}")
+            
             h_cand = ak.where(where, dtrpair, h_cand)
         
         elif (ch == "mutau"):
@@ -274,22 +255,10 @@ def buildhcand(self: Producer,
             dtrpairs_sel = select_pairs(dtrpairs, events.MET, 40.0)
             print(f"""dtrpairs["0"] fields: {dtrpairs_sel["0"].fields}""")
             print(f"""dtrpairs["1"] fields: {dtrpairs_sel["1"].fields}""")
-            #iso_sort_idx_1 = ak.argsort(dtrpairs["0"].pfRelIso03_all, ascending=True)
-            #dtrpairs = dtrpairs[iso_sort_idx_1]
-            #pt_sort_idx_1 = ak.argsort(dtrpairs["0"].pt, ascending=False)
-            #dtrpairs = dtrpairs[pt_sort_idx_1]
-            #iso_sort_idx_2 = ak.argsort(dtrpairs["1"].rawDeepTau2017v2p1VSjet, ascending=True)
-            #dtrpairs = dtrpairs[iso_sort_idx_2]
-            #pt_sort_idx_2 = ak.argsort(dtrpairs["1"].pt, ascending=False)
-            #dtrpairs = dtrpairs[pt_sort_idx_2]
-            #lep1 = ak.singletons(ak.firsts(dtrpairs["0"], axis=1))
-            #lep2 = ak.singletons(ak.firsts(dtrpairs["1"], axis=1))
-            #print(f"lep1 pt: {lep1.pt}")
-            #print(f"lep2 pt: {lep2.pt}")
-            #dtrpair = ak.concatenate([lep1, lep2], axis=1)
+
             dtrpair = sort_and_get_pair_semilep(dtrpairs_sel)
-            
             print(f"dtrpair pt: {dtrpair.pt}")
+            
             h_cand = ak.where(where, dtrpair, h_cand)
             
         elif (ch == "tautau"):
@@ -302,30 +271,19 @@ def buildhcand(self: Producer,
                 & (ak.num(Muons, axis=-1) == 0)
             )
             where = where & nlep_mask
-            leps1 = leps2 = Taus
-            dtrpairs = ak.combinations(leps1, 2, axis=-1)
+            leps = Taus
+            dtrpairs = ak.combinations(leps, 2, axis=-1)
             dtrpairs_sel = select_pairs(dtrpairs)
             print(f"""dtrpairs["0"] fields: {dtrpairs_sel["0"].fields}""")
             print(f"""dtrpairs["1"] fields: {dtrpairs_sel["1"].fields}""")
-            #iso_sort_idx_1 = ak.argsort(dtrpairs["0"].rawDeepTau2017v2p1VSjet, ascending=True)
-            #dtrpairs = dtrpairs[iso_sort_idx_1]
-            #pt_sort_idx_1 = ak.argsort(dtrpairs["0"].pt, ascending=False)
-            #dtrpairs = dtrpairs[pt_sort_idx_1]
-            #iso_sort_idx_2 = ak.argsort(dtrpairs["1"].rawDeepTau2017v2p1VSjet, ascending=True)
-            #dtrpairs = dtrpairs[iso_sort_idx_2]
-            #pt_sort_idx_2 = ak.argsort(dtrpairs["1"].pt, ascending=False)
-            #dtrpairs = dtrpairs[pt_sort_idx_2]
-            #lep1 = ak.singletons(ak.firsts(dtrpairs["0"], axis=1))
-            #lep2 = ak.singletons(ak.firsts(dtrpairs["1"], axis=1))
-            #print(f"lep1 pt: {lep1.pt}")
-            #print(f"lep2 pt: {lep2.pt}")
-            #dtrpair = ak.concatenate([lep1, lep2], axis=1)
+
             dtrpair = sort_and_get_pair_fullhad(dtrpairs_sel)
             print(f"dtrpair pt: {dtrpair.pt}")
+
             h_cand = ak.where(where, dtrpair, h_cand)
 
     print(f"h_cand : {h_cand.fields}")
     events = set_ak_column(events, "hcand", h_cand)
-    #from IPython import embed; embed()
+    from IPython import embed; embed()
 
     return events

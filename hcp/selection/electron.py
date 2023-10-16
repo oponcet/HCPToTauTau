@@ -101,6 +101,8 @@ def electron_selection(
         # convert to sorted indices
         default_indices = sorted_indices[default_mask[sorted_indices]]
         default_indices = ak.values_astype(default_indices, np.int32)
+
+        # electrons passing veto mask but not the default mask
         veto_mask = veto_mask & ~default_mask
 
     # convert to sorted indices

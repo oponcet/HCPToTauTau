@@ -73,6 +73,7 @@ def muon_selection(
         & (events.Muon.mediumId == 1)
         & (events.Muon.pfRelIso04_all < 0.3)
     )
+
     if is_single or is_cross:
         minpt = trigger.legs[0].min_pt
         default_mask = (
@@ -87,6 +88,8 @@ def muon_selection(
         # convert to sorted indices
         default_indices = sorted_indices[default_mask[sorted_indices]]
         default_indices = ak.values_astype(default_indices, np.int32)
+
+        # muons passing the veto mask but not the default one
         veto_mask = veto_mask & ~default_mask
         
     # convert to sorted indices
@@ -125,6 +128,7 @@ def muon_dl_veto_selection(
         & (abs(events.Muon.dxy) < 0.045)
         & (events.Muon.pfRelIso04_all < 0.3)
     )
+
     # convert to sorted indices
     dl_veto_indices = sorted_indices[dl_veto_mask[sorted_indices]]
     dl_veto_indices = ak.values_astype(dl_veto_indices, np.int32)

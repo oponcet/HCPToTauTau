@@ -121,6 +121,7 @@ def main(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # features
     events = self[features](events, **kwargs)
 
+    # hcand features
     events = self[ll_features](events, **kwargs)
     
     # category ids
