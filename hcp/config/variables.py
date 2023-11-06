@@ -37,7 +37,7 @@ def add_common_features(cfg: od.config) -> None:
 
 def add_lepton_features(cfg: od.Config) -> None:
     """
-    Adds lepton features only
+    Adds lepton features only , ex electron_1_pt
     """
     for obj in ["Electron", "Muon", "Tau"]:
         for i in range(2):
