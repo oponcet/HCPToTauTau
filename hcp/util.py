@@ -141,14 +141,16 @@ def get_dataset_lfns(
 
     dataset_id, full_campaign, tier = dataset_key.split("/")[1:]
     main_campaign, sub_campaign = full_campaign.split("-", 1)
-    print(dataset_id, full_campaign, tier)
+    #print(dataset_id, full_campaign, tier)
     lfn_base = law.wlcg.WLCGDirectoryTarget(
         #f"/store/{dataset_inst.data_source}/{main_campaign}/{dataset_id}/{tier}/{sub_campaign}/0",
-        f"/eos/cms/store/group/phys_tau/TauFW/nano/UL2017/{dataset_id}/{full_campaign}/{tier}",
+        f"/eos/cms/store/group/phys_tau/TauFW/nanoV10/UL2017/{dataset_id}/{full_campaign}/{tier}",
         #f"/eos/user/g/gsaha3/Exotic/HCP_Test/UL2017/{dataset_id}/{full_campaign}/{tier}",
         fs=f"local",
     )
+    #print(f"/eos/cms/store/group/phys_tau/TauFW/nano/UL2017/{dataset_id}/{full_campaign}/{tier}")
+
     # loop though files and interpret paths as lfns
     paths = [lfn_base.child(basename, type="f").path for basename in lfn_base.listdir(pattern="*.root")]
-    print(paths)
+    #print(paths)
     return paths

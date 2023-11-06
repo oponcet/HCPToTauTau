@@ -40,6 +40,7 @@ def add_config(
     # gather campaign data
     year = campaign.x.year
 
+
     # add processes we are interested in
     process_names = [
         #"data",
@@ -170,6 +171,10 @@ def add_config(
         },
     )
     
+     # names of electron correction sets and working points
+    # (used in the muon producer)
+    cfg.x.electron_sf_names = ("UL-Electron-ID-SF", f"{year}", "wp80iso")
+
     # names of muon correction sets and working points
     # (used in the muon producer)
     cfg.x.muon_sf_names = ("NUM_TightRelIso_DEN_TightIDandIPCut", f"{year}_UL")
@@ -204,15 +209,19 @@ def add_config(
     
     # external files
     json_mirror = "/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-849c6a6e"
+    json_local = "/eos/user/o/oponcet/code/analysis/correction/jsonpog-integration"
     cfg.x.external_files = DotDict.wrap({
         # lumi files
         "lumi": {
             "golden": ("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt", "v1"),  # noqa
             "normtag": ("/afs/cern.ch/user/l/lumipro/public/Normtags/normtag_PHYSICS.json", "v1"),
         },
+
+        # electron scale factor 
+        "electron_sf": (f"{json_local}/POG/EGM/{year}_UL/electron.json.gz", "v1"),
         
         # muon scale factors
-        "muon_sf": (f"{json_mirror}/POG/MUO/{year}_UL/muon_Z.json.gz", "v1"),
+        "muon_sf": (f"{json_local}/POG/MUO/{year}_UL/muon_Z.json.gz", "v1"),
     })
     
     # target file size after MergeReducedEvents in MB
