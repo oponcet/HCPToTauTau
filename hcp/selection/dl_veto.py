@@ -36,24 +36,24 @@ def dilep_res_veto_selection(
     print("find low mass and Z mass resonances")
     dl_electron_veto_indices = self[electron_dl_veto_selection](events)
     dl_muon_veto_indices = self[muon_dl_veto_selection](events)
-    print("bla-1")
+    #print("bla-1")
     #dummy = ak.zeros_like(1*events.event, dtype=np.float32)
     eles = events.Electron[dl_electron_veto_indices]
     muos = events.Muon[dl_muon_veto_indices]
-    print("bla-2")
+    #print("bla-2")
     eles_comb = ak.combinations(eles, 2)
     muos_comb = ak.combinations(muos, 2)
-    print("bla-3")
+    #print("bla-3")
     leps_comb = ak.concatenate([eles_comb,muos_comb], axis=1)
-    print("bla-4")
+    #print("bla-4")
     leps1, leps2 = ak.unzip(leps_comb)
-    print("bla-5")
+    #print("bla-5")
     charge_pair = (leps1.charge + leps2.charge)
     invm_pair = (1*leps1 + 1*leps2).mass 
     dr_pair = (1*leps1).delta_r(1*leps2)
     #from IPython import embed; embed()
 
-    print("bla-6")
+    #print("bla-6")
     base_mask = (dr_pair > 0.15)
     
     low_mass_res_mask = (base_mask
@@ -61,14 +61,14 @@ def dilep_res_veto_selection(
     z_mass_res_mask = (base_mask
                        & ((invm_pair > 70) | (invm_pair < 110))
                        & (charge_pair == 0))
-    print("bla-7")
+    #print("bla-7")
     res_mask = (low_mass_res_mask | z_mass_res_mask)
 
     invm = invm_pair[res_mask]
     dr = dr_pair[res_mask]
-    print("bla-8")
+    #print("bla-8")
     no_res_mask = ak.num(invm, axis=1) == 0
-    print("bla-9")
+    #print("bla-9")
     
     return events, SelectionResult(
         steps={
