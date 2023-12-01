@@ -10,7 +10,7 @@ from columnflow.selection import Selector, selector
 from columnflow.util import maybe_import, DotDict
 
 from hcp.config.trigger_util import Trigger
-from hcp.util import invariant_mass, deltaR, new_invariant_mass, trigger_object_matching, IF_NANO_V9, IF_NANO_V11, get_nleps_dl_veto
+from hcp.util import invariant_mass, deltaR, new_invariant_mass, trigger_object_matching, IF_NANO_V9, IF_NANO_V11#, get_nleps_dl_veto
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")

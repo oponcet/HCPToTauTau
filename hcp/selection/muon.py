@@ -105,7 +105,7 @@ def muon_selection(
     uses={
         # nano columns
         "Muon.pt", "Muon.eta", "Muon.pfRelIso04_all", "Muon.dxy", "Muon.dz",
-        "Muon.isGlobal", "Muon.isPFcand", "Muon.isTracker",
+        "Muon.isGlobal", "Muon.isPFcand", #"Muon.isTracker",
     },
     exposed=False,
 )
@@ -123,7 +123,7 @@ def muon_dl_veto_selection(
         & (abs(events.Muon.eta) < 2.4)
         & (events.Muon.isGlobal == True)
         & (events.Muon.isPFcand == True)
-        & (events.Muon.isTracker ==True)
+        #& (events.Muon.isTracker ==True)
         & (abs(events.Muon.dz) < 0.2)
         & (abs(events.Muon.dxy) < 0.045)
         & (events.Muon.pfRelIso04_all < 0.3)

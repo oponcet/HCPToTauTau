@@ -94,9 +94,9 @@ def IF_NANO_V9(self, func: ArrayFunction) -> Any | set[Any]:
 
 @deferred_column
 def IF_NANO_V11(self, func: ArrayFunction) -> Any | set[Any]:
-    return self.get() if func.config_inst.campaign.x.version == 11 else None
+    return self.get() if func.config_inst.campaign.x.version >= 10 else None
 
-
+"""
 def get_nleps_dl_veto(events: ak.Array,
                       ele_idxs: ak.Array,
                       mu_idxs: ak.Array) -> ak.Array:
@@ -129,8 +129,7 @@ def get_nleps_dl_veto(events: ak.Array,
     comb_inv_m = invm[mask]
     #from IPython import embed; embed()
     return ak.num(comb_inv_m, axis=1)
-
-
+"""
 
 def get_dataset_lfns(
         dataset_inst: od.Dataset,
@@ -139,13 +138,15 @@ def get_dataset_lfns(
 ) -> list[str]:
     # destructure dataset_key into parts and create the lfn base directory
 
-    dataset_id, full_campaign, tier = dataset_key.split("/")[1:]
-    main_campaign, sub_campaign = full_campaign.split("-", 1)
+    #dataset_id, full_campaign, tier = dataset_key.split("/")[1:]
+    #main_campaign, sub_campaign = full_campaign.split("-", 1)
     #print(dataset_id, full_campaign, tier)
     lfn_base = law.wlcg.WLCGDirectoryTarget(
         #f"/store/{dataset_inst.data_source}/{main_campaign}/{dataset_id}/{tier}/{sub_campaign}/0",
-        f"/eos/cms/store/group/phys_tau/TauFW/nanoV10/UL2017/{dataset_id}/{full_campaign}/{tier}",
+        #f"/eos/cms/store/group/phys_tau/TauFW/nanoV10/UL2017/{dataset_id}/{full_campaign}/{tier}",
+        #"/eos/cms/store/group/phys_tau/TauFW/nanoV10/Run2_2017/DY2JetsToLL_M-50-madgraphMLM/",
         #f"/eos/user/g/gsaha3/Exotic/HCP_Test/UL2017/{dataset_id}/{full_campaign}/{tier}",
+        dataset_key,
         fs=f"local",
     )
     #print(f"/eos/cms/store/group/phys_tau/TauFW/nano/UL2017/{dataset_id}/{full_campaign}/{tier}")

@@ -35,6 +35,7 @@ def dilep_res_veto_selection(
 ) -> tuple[ak.Array, SelectionResult]:
     print("find low mass and Z mass resonances")
     dl_electron_veto_indices = self[electron_dl_veto_selection](events)
+    #print("bla-0")
     dl_muon_veto_indices = self[muon_dl_veto_selection](events)
     #print("bla-1")
     #dummy = ak.zeros_like(1*events.event, dtype=np.float32)

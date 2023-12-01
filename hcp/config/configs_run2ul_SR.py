@@ -44,11 +44,11 @@ def add_config(
     # add processes we are interested in
     process_names = [
         #"data",
-        "tt",
+        #"tt",
         "dy",
-        "st",
-        "ewk",
-        "vv",
+        #"st",
+        #"ewk",
+        #"vv",
     ]
     for process_name in process_names:
         # add the process
@@ -62,22 +62,23 @@ def add_config(
         # data
         #"data_mu_b",
         # backgrounds
-        "tt_sl_powheg",
-        "tt_dl_powheg",
-        "dy_lep_m50_1j_madgraph",
-        "dy_lep_m50_2j_madgraph",
-        "dy_lep_0j_amcatnlo",
-        "dy_lep_1j_amcatnlo",
-        "dy_lep_2j_amcatnlo",
-        "ewk_z_ll_m50_madgraph",
-        "zz_pythia",
-        "zz_qqll_m4_amcatnlo",
-        "zz_llnunu_powheg",
-        "wz_pythia",
-        "wz_lllnu_amcatnlo",
-        "wz_qqll_m4_amcatnlo",
+        "dy_lep_m50_madgraph",
+        #"tt_sl_powheg",
+        #"tt_dl_powheg",
+        #"dy_lep_m50_1j_madgraph",
+        #"dy_lep_m50_2j_madgraph",
+        #"dy_lep_0j_amcatnlo",
+        #"dy_lep_1j_amcatnlo",
+        #"dy_lep_2j_amcatnlo",
+        #"ewk_z_ll_m50_madgraph",
+        #"zz_pythia",
+        #"zz_qqll_m4_amcatnlo",
+        #"zz_llnunu_powheg",
+        #"wz_pythia",
+        #"wz_lllnu_amcatnlo",
+        #"wz_qqll_m4_amcatnlo",
         # signals
-        "st_tchannel_t_powheg",
+        #"st_tchannel_t_powheg",
     ]
     for dataset_name in dataset_names:
         # add the dataset
@@ -171,7 +172,7 @@ def add_config(
         },
     )
     
-     # names of electron correction sets and working points
+    # names of electron correction sets and working points
     # (used in the muon producer)
     cfg.x.electron_sf_names = ("UL-Electron-ID-SF", f"{year}", "wp80iso")
 

@@ -68,7 +68,7 @@ def main(
     events, dl_veto_results = self[dilep_res_veto_selection](events, **kwargs)
     results += dl_veto_results
     event_sel_json_and_met_filter_and_dlresveto = reduce(and_, results.steps.values())
-    
+    print("event_sel_json_and_met_filter_and_dlresveto")
     # trigger selection
     events, trigger_results = self[trigger_selection](events, **kwargs)
     results += trigger_results

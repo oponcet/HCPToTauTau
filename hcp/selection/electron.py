@@ -20,7 +20,7 @@ ak = maybe_import("awkward")
     uses={
         "Electron.pt", "Electron.eta", "Electron.phi", "Electron.mass",
         "Electron.dxy", "Electron.dz",
-        "Electron.pfRelIso03_all", "Electron.convVeto", "Electron.lostHits",
+        "Electron.pfRelIso03_all", "Electron.convVeto", #"Electron.lostHits",
         IF_NANO_V9("Electron.mvaFall17V2Iso_WP80", "Electron.mvaFall17V2Iso_WP90", "Electron.mvaFall17V2noIso_WP90"),
         IF_NANO_V11("Electron.mvaIso_WP80", "Electron.mvaIso_WP90", "Electron.mvaNoIso_WP90"),
         "TrigObj.pt", "TrigObj.eta", "TrigObj.phi",
@@ -41,7 +41,7 @@ def electron_selection(
     is_single = trigger.has_tag("single_e")
     is_cross = trigger.has_tag("cross_e_tau")
     #is_2016 = self.config_inst.campaign.x.year == 2016
-
+    print(events.Electron.fields)
     # start per-electron mask with trigger object matching
     if is_single:
         # catch config errors
@@ -83,7 +83,7 @@ def electron_selection(
         & (abs(events.Electron.dxy) < 0.045)
         & (mva_noniso_wp90 == 1)
         & (events.Electron.convVeto == 1)
-        & (events.Electron.lostHits <= 1)
+        #& (events.Electron.lostHits <= 1)
         & (events.Electron.pfRelIso03_all < 0.3)
     )
 

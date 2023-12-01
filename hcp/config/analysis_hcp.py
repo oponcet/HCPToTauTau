@@ -55,7 +55,8 @@ ana.x.config_groups = {}
 
 from hcp.config.configs_run2ul_DY import add_config as add_config_run2ul_DY
 from hcp.config.configs_run2ul_SR import add_config as add_config_run2ul_SR
-from cmsdb.campaigns.run2_2017_nano_local_v9 import campaign_run2_2017_nano_v9
+#from cmsdb.campaigns.run2_2017_nano_local_v9 import campaign_run2_2017_nano_v9
+from cmsdb.campaigns.run2_2017_nano_local_v10 import campaign_run2_2017_nano_local_v10
 
 """
 add_config_run2ul_DY(
@@ -67,7 +68,7 @@ add_config_run2ul_DY(
 """
 add_config_run2ul_SR(
     analysis_hcp,
-    campaign_run2_2017_nano_v9.copy(),
-    config_name=campaign_run2_2017_nano_v9.name,
-    config_id=3,
+    campaign_run2_2017_nano_local_v10.copy(),
+    config_name=campaign_run2_2017_nano_local_v10.name,
+    config_id=2,
 )
