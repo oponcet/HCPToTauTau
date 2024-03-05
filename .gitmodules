@@ -6,3 +6,7 @@
 	path = modules/cmsdb
 	url = git@github.com:uhh-cms/cmsdb.git
 	branch = master
+[submodule "modules/extern/pybind11"]
+	path = modules/extern/pybind11
+	url = ../../pybind/pybind11
+	branch = stable

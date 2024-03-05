@@ -27,13 +27,16 @@ ana.x.versions = {}
 # (used in cf.HTCondorWorkflow)
 ana.x.bash_sandboxes = [
     "$CF_BASE/sandboxes/cf.sh",
+    "$HCP_BASE/sandboxes/venv_columnar_tf.sh",
     law.config.get("analysis", "default_columnar_sandbox"),
+    "$CF_BASE/sandboxes/venv_cmssw_sand.sh",
+    "$HCP_BASE/sandboxes/venv_cmssw_sand.sh",
 ]
 
 # files of cmssw sandboxes that might be required by remote tasks
 # (used in cf.HTCondorWorkflow)
 ana.x.cmssw_sandboxes = [
-    # "$CF_BASE/sandboxes/cmssw_default.sh",
+    "$HCP_BASE/sandboxes/venv_cmssw_sand.sh",
 ]
 
 # clear the list when cmssw bundling is disabled

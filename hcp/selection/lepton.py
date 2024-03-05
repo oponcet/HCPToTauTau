@@ -8,7 +8,7 @@ http://cms.cern.ch/iCMS/jsp/openfile.jsp?tp=draft&files=AN2019_192_v15.pdf
 
 from columnflow.selection import Selector, SelectionResult, selector
 from columnflow.columnar_util import set_ak_column
-from columnflow.util import maybe_import, DotDict
+from columnflow.util import maybe_import, DotDict, dev_sandbox
 
 from hcp.selection.muon import muon_selection, muon_dl_veto_selection
 from hcp.selection.electron import electron_selection, electron_dl_veto_selection
@@ -34,6 +34,7 @@ ak = maybe_import("awkward")
         # new columns
         "channel_id", "single_triggered", "cross_triggered", "m_ll", "dr_ll",
     },
+    sandbox=dev_sandbox("bash::$HCP_BASE/sandboxes/venv_columnar_tf.sh"),
 )
 def lepton_selection(
     self: Selector,
@@ -48,6 +49,10 @@ def lepton_selection(
     ch_etau = self.config_inst.get_channel("etau")
     ch_mutau = self.config_inst.get_channel("mutau")
     ch_tautau = self.config_inst.get_channel("tautau")
+
+    tf = maybe_import("tensorflow")
+
+    print(">>>>>>>>>>>>>>>> tf = ", tf)
 
     print(f"channels: {ch_etau}, {ch_mutau}, {ch_tautau}")
     
@@ -77,7 +82,7 @@ def lepton_selection(
             events,
             trigger,
             leg_masks,
-            call_force=True,
+            #call_force=True,
             **kwargs,
         )
         print("ele idx done")
@@ -87,7 +92,7 @@ def lepton_selection(
             events,
             trigger,
             leg_masks,
-            call_force=True,
+            #call_force=True,
             **kwargs,
         )
         print("muon idx done")
@@ -99,7 +104,7 @@ def lepton_selection(
             leg_masks,
             electron_indices,
             muon_indices,
-            call_force=True,
+            #call_force=True,
             **kwargs,
         )
         print("tau idx done")
@@ -137,8 +142,8 @@ def lepton_selection(
 
             sel_electron_indices = ak.where(where_etau, electron_indices, sel_electron_indices)
             sel_tau_indices = ak.where(where_etau, tau_indices, sel_tau_indices)            
-            #print(f"ele idxs : {electron_indices}")
-            #print(f"tau idxs : {tau_indices}")
+            print(f"ele idxs : {electron_indices}")
+            print(f"tau idxs : {tau_indices}")
 
             m_ll_val = new_invariant_mass(events.Electron[sel_electron_indices][:,:1], events.Tau[sel_tau_indices][:,:1])
             m_ll = ak.where(where_etau, m_ll_val, m_ll)
@@ -194,6 +199,7 @@ def lepton_selection(
                 (ak.num(tau_indices, axis=1) >= 2)
             )
             #from IPython import embed; embed()
+            print("here1")
 
             # just to check if at least one leptons pair having opposite charge per event
             tau_pairs = ak.combinations(events.Tau[tau_indices], 2)
@@ -222,6 +228,7 @@ def lepton_selection(
     sel_tau_indices = ak.values_astype(sel_tau_indices, np.int32)
     m_ll = ak.values_astype(m_ll, np.float32)
     dr_ll = ak.values_astype(dr_ll, np.float32)
+    print("here2")
     
     # save new columns
     events = set_ak_column(events, "channel_id", channel_id)
@@ -229,7 +236,7 @@ def lepton_selection(
     events = set_ak_column(events, "cross_triggered", cross_triggered)
     events = set_ak_column(events, "m_ll", m_ll)
     events = set_ak_column(events, "dr_ll", dr_ll)
-
+    print("here3")
     
     return events, SelectionResult(
         steps={

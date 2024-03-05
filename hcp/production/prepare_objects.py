@@ -6,6 +6,9 @@ Prepare h-Candidate from SelectionResult: selected lepton indices & channel_id [
 
 import functools
 
+
+#from modules.extern.ClassicSVfit.wrapper import classic_svfit
+
 from typing import Optional
 from columnflow.production import Producer, producer
 from columnflow.production.categories import category_ids
@@ -15,7 +18,7 @@ from columnflow.production.cms.mc_weight import mc_weight
 from columnflow.production.cms.muon import muon_weights
 from columnflow.selection import SelectionResult
 from columnflow.selection.util import create_collections_from_masks
-from columnflow.util import maybe_import
+from columnflow.util import maybe_import, dev_sandbox
 from columnflow.columnar_util import EMPTY_FLOAT, Route, set_ak_column
 
 from hcp.util import invariant_mass, deltaR, transverse_mass
@@ -51,7 +54,7 @@ def select_pairs(dtrpairs: ak.Array,
 
     # Apply the final mask to filter the pairs    
     dtrpairs = dtrpairs[dtr_mask]
-
+            
     #from IPython import embed; embed()
 
     # Return the filtered pairs
@@ -217,16 +220,27 @@ def sort_and_get_pair_fullhad(dtrpairs: ak.Array)->ak.Array:
         "Electron.pt", "Electron.pfRelIso03_all",
         "Muon.pt", "Muon.pfRelIso03_all",
         "Tau.pt", "Tau.rawDeepTau2017v2p1VSjet",
-        "MET.pt", "MET.phi",
+        "MET.pt", "MET.phi", "MET.*",
     },
+    sandbox=dev_sandbox("bash::$HCP_BASE/sandboxes/venv_columnar_tf.sh"),
 )
 def buildhcand(self: Producer,
                events: ak.Array,
                selres: SelectionResult,
                **kwargs) -> ak.Array:
+
     print("Started building h-cand")
     #empty_indices = ak.zeros_like(1*events.channel_id, dtype=np.uint16)[..., None][..., :0]
     #empty_indices = ak.zeros_like(1*events.Electron)
+
+    #print("sandbox = ",sandbox)
+
+
+    #pybind = maybe_import("pybind11")
+    #from IPython import embed; embed()
+
+    print(root)
+    #print(pybind)
 
     # Extract the particles (Electrons, Muons, Taus) from the selection result
     Electrons = selres.x.Electrons
@@ -306,7 +320,7 @@ def buildhcand(self: Producer,
             
             # Update the h-cand array with the selected pair
             h_cand = ak.where(where, dtrpair, h_cand)
-            
+               
         elif (ch == "tautau"):
             print(f"channel: {ch}")
             assert (ch == self.config_inst.get_channel(ch).name), "Should be tautau channel"
@@ -318,6 +332,10 @@ def buildhcand(self: Producer,
             )
             where = where & nlep_mask
             leps = Taus
+            print(f"""Taus fields: {Taus.fields}""")
+            print(f"""Met fields: {events.MET.fields}""")
+
+
             dtrpairs = ak.combinations(leps, 2, axis=-1)
             dtrpairs_sel = select_pairs(dtrpairs)
             # print(f"""dtrpairs["0"] fields: {dtrpairs_sel["0"].fields}""")
@@ -327,6 +345,81 @@ def buildhcand(self: Producer,
             #print(f"dtrpair pt: {dtrpair.pt}")
 
             h_cand = ak.where(where, dtrpair, h_cand)
+
+
+            # # SVFit part
+            # "MET.pt", "MET.phi",
+            
+            leps1 = dtrpairs["0"] 
+            leps2 = dtrpairs["1"]
+
+
+            print(f"""Met fields: {events.MET.sumEt}""")
+
+            #print("MET.sumEt:", MET.sumEt)
+
+            
+            metx = events.MET.sumEt * np.cos(events.MET.phi)
+            mety = events.MET.sumEt * np.sin(events.MET.phi)
+        
+            
+            print("metx:", metx)
+            print("mety:", mety)
+
+            # matrix = root.TMatrixD(2, 2)
+
+            # print("matrix")
+
+            # # Create the TMatrixD objects directly without a separate function
+            # covMET = []
+            # print("event.MET.covXY:", events.MET.covXY)
+            # print("event.MET.covXX:", events.MET.covXX)
+            # print("event.MET.covYY:", events.MET.covYY)
+            # # Iterate over the elements of event.MET.covXX, event.MET.covXY, and event.MET.covYY
+            # for covxx, covxy, covyy in zip(events.MET.covXX, events.MET.covXY, events.MET.covYY):
+            #     # Create a TMatrixD object for each covariance matrix
+            #     print("a")
+            #     matrix = root.TMatrixD(2, 2)
+            #     print("b")
+            #     matrix[0][0] = covxx
+            #     matrix[1][0] = covxy
+            #     matrix[0][1] = -covxy
+            #     matrix[1][1] = covyy
+            #     # Append the TMatrixD object to the list
+            #     covMET.append(matrix)
+            # # Convert the list of TMatrixD objects to Awkward Array
+            # covMET_ak = ak.Array(covMET)
+
+            # # Print the Awkward Array
+            # print(covMET_ak)
+
+
+            # # Create the TMatrixD objects
+            # covMET = create_TMatrix(event.MET.covXX, event.MET.covXY, event.MET.covYY)
+
+            # print(covMET)
+            # # Convert the list of TMatrixD objects to Awkward Array
+            # covMET_ak = ak.Array(covMET)
+
+            # print(covMET_ak)
+
+            # Print the Awkwa
+            # matrix = r.TMatrixD(2, 2, array1.flatten(), array2.flatten(), array3.flatten(), array4.flatten())
+
+
+
+            # # build MeasuredTauLepton ak.array for leptons 1 and leptons 2
+            # leps1_MeasuredTauLepton = [MeasuredTauLepton(*args) for args in zip(m.kDecayType.kTauToElecDecay, leps1["pt"],leps1["eta"],leps1["phi"],leps1["mass"],leps1["decay_mode"])]
+            # leps2_MeasuredTauLepton = [MeasuredTauLepton(*args) for args in zip(m.kDecayType.kTauToElecDecay, leps2["pt"],leps2["eta"],leps2["phi"],leps2["mass"],leps2["decay_mode"])]
+
+            # measuredTauLeptons = [leps1_MeasuredTauLepton,leps2_MeasuredTauLepton]
+
+
+            # svFitAlgo.integrate(measuredTauLeptons, MET.px, MET.phy, MET.cov)
+
+            # # Get Mtautau mass
+            # mTauTau_SVFit = svfit.getHistogramAdapter.getMass()
+
 
     # print(f"h_cand : {h_cand.fields}")
 
