@@ -13,8 +13,10 @@ from columnflow.production.cms.seeds import deterministic_seeds
 from columnflow.production.cms.mc_weight import mc_weight
 from columnflow.production.cms.muon import muon_weights
 from columnflow.selection.util import create_collections_from_masks
-from columnflow.util import maybe_import
+from columnflow.util import maybe_import, dev_sandbox
 from columnflow.columnar_util import EMPTY_FLOAT, Route, set_ak_column
+from hcp.production.svfit import svfit, fastMTT
+
 
 from hcp.util import TetraVec, _invariant_mass, deltaR
 
@@ -60,10 +62,13 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 def ll_features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     #false_mask = ak.zeros_like(1*events.event, dtype=np.float32)
     events = ak.Array(events, behavior=coffea.nanoevents.methods.nanoaod.behavior)
-    events["hcand"] = ak.with_name(events.hcand, "PtEtaPhiMLorentzVector")
-    
-    mass = (events.hcand[:,:1] + events.hcand[:,1:2]).mass
-    dr = ak.firsts(events.hcand[:,:1].metric_table(events.hcand[:,1:2]), axis=1)
+    # events["hcand"] = ak.with_name(events.hcand, "PtEtaPhiMLorentzVector")
+    # Hcand = 1*events.hcand
+    Hcand = ak.with_name(events.hcand, "PtEtaPhiMLorentzVector")
+
+
+    mass = (Hcand[:,:1] + Hcand[:,1:2]).mass
+    dr = ak.firsts(Hcand[:,:1].metric_table(Hcand[:,1:2]), axis=1)
     
     #from IPython import embed; embed()
     events = set_ak_column_f32(events, "hcand_invmass", ak.firsts(mass))
@@ -111,11 +116,12 @@ def cutflow_features(
 
 @producer(
     uses={
-        features, ll_features, category_ids, normalization_weights, muon_weights, deterministic_seeds,
+        features, ll_features, category_ids, normalization_weights, muon_weights, deterministic_seeds, svfit, fastMTT
     },
     produces={
-        features, ll_features, category_ids, normalization_weights, muon_weights, deterministic_seeds,
+        features, ll_features, category_ids, normalization_weights, muon_weights, deterministic_seeds, svfit, fastMTT
     },
+    # sandbox=dev_sandbox("bash::$HCP_BASE/sandboxes/venv_svfit_dev.sh"),
 )
 def main(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # features
@@ -137,5 +143,11 @@ def main(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
         # muon weights
         events = self[muon_weights](events, **kwargs)
+
+    # svfit
+    events = self[svfit](events, **kwargs)
+
+    # fastMTT
+    events = self[fastMTT](events, **kwargs)
 
     return events
