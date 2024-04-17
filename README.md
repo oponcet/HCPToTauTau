@@ -143,13 +143,13 @@ from modules.extern.TauAnalysis.ClassicSVfit.wrapper.pybind_wrapper import *
 ```
 
 #### Plot quickly ak.array :bar_chart:	
-Sometimess it can be nice to quickly have a look a the distribtuion of your favorite varaible. For this you can include the following modules: 
+Sometimess it can be nice to quickly have a look a the distribution of your favorite variable. For this you can include the following modules: 
 ```
 mpl = maybe_import("matplotlib")
 plt = maybe_import("matplotlib.pyplot")
 ```
 
-And save your distribtuion in few lines:
+And save your distribution in few lines:
 
 ```
 # Make the plot
