@@ -20,13 +20,21 @@ from columnflow.selection import SelectionResult
 from columnflow.selection.util import create_collections_from_masks
 from columnflow.util import maybe_import, dev_sandbox
 from columnflow.columnar_util import EMPTY_FLOAT, Route, set_ak_column
-
 from hcp.util import invariant_mass, deltaR, transverse_mass
+
+#from modules.extern.TauAnalysis.ClassicSVfit.wrapper.classic_svFit import *
+
+from modules.extern.TauAnalysis.ClassicSVfit.wrapper.pybind_wrapper import *
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
 coffea = maybe_import("coffea")
 maybe_import("coffea.nanoevents.methods.nanoaod")
+root = maybe_import("ROOT")
+
+
+
+print(root)
 
 # helpers
 set_ak_column_f32 = functools.partial(set_ak_column, value_type=np.float32)
@@ -38,6 +46,9 @@ def select_pairs(dtrpairs: ak.Array,
 
     # Unzip the dtrpairs array into two separate arrays        
     lep1unzip, lep2unzip = ak.unzip(dtrpairs)
+
+    print(f"""dtrpairs["0"] fields: {dtrpairs["0"].fields}""")
+    print(f"""dtrpairs["1"] fields: {dtrpairs["1"].fields}""")
 
     # Create masks to filter pairs of objects
     charge_mask = (lep1unzip.charge + lep2unzip.charge) == 0 # opposite charge
@@ -56,8 +67,8 @@ def select_pairs(dtrpairs: ak.Array,
     dtrpairs = dtrpairs[dtr_mask]
             
     #from IPython import embed; embed()
-
-    # Return the filtered pairs
+    print(f"""dtrpairs["0"] fields: {dtrpairs["0"].fields}""")
+    print(f"""dtrpairs["1"] fields: {dtrpairs["1"].fields}""")    # Return the filtered pairs
     return dtrpairs
 
 def sort_and_get_pair_semilep(dtrpairs: ak.Array)->ak.Array:
@@ -219,10 +230,10 @@ def sort_and_get_pair_fullhad(dtrpairs: ak.Array)->ak.Array:
         "channel_id",
         "Electron.pt", "Electron.pfRelIso03_all",
         "Muon.pt", "Muon.pfRelIso03_all",
-        "Tau.pt", "Tau.rawDeepTau2017v2p1VSjet",
+        "Tau.pt", "Tau.rawDeepTau2017v2p1VSjet","Tau.decayMode",
         "MET.pt", "MET.phi", "MET.*",
     },
-    sandbox=dev_sandbox("bash::$HCP_BASE/sandboxes/venv_columnar_tf.sh"),
+    # sandbox=dev_sandbox("bash::$HCP_BASE/sandboxes/venv_columnar_tf.sh"),
 )
 def buildhcand(self: Producer,
                events: ak.Array,
@@ -238,8 +249,9 @@ def buildhcand(self: Producer,
 
     #pybind = maybe_import("pybind11")
     #from IPython import embed; embed()
+    # ROOT = maybe_import("root")
 
-    print(root)
+    # print(ROOT)
     #print(pybind)
 
     # Extract the particles (Electrons, Muons, Taus) from the selection result
@@ -256,8 +268,31 @@ def buildhcand(self: Producer,
         )
     )
 
+    # Concatenate Electrons, Muons, and Taus
+    # particles = ak.concatenate([Electrons, Muons, Taus], axis=1)
+    # concatenate = ak.concatenate(Electrons, Muon, Taus, axis=1)
+    h_cand = ak.full_like(ak.concatenate([Electrons, Muons, Taus], axis=1), 0)
+    print(f"h_cand | concatenate: {h_cand.fields}")
+
+    # Create a decay mode array for the first lepton
+    lep_decay_mode = ak.full_like(h_cand.pt, -1)
+    # print(f"""leps1_decay_mode: {leps1_decay_mode}""")
+    # print(f"""leps2.decayMode: {leps2.decayMode}""")
+
+    # add decay mode array set to -1 for first lepton (electron)
+    h_cand = ak.with_field(h_cand, lep_decay_mode, "decayMode")
+
+    lep_flavor = ak.full_like(h_cand.pt, 0) # none
+
+    # add decay mode array set to -1 for first lepton (electron)
+    h_cand = ak.with_field(h_cand, lep_flavor, "lepton")
+   
+    print(f"h_cand : {h_cand.fields}")
+
+
+
     # Initialize an empty h-cand array
-    h_cand = empty_indices_ele[...,:0]
+    # h_cand = empty_indices_ele[...,:0]
     #print(f"h_cand | empty_indices: {h_cand}")
 
     channels = ["etau", "mutau", "tautau"]
@@ -284,18 +319,65 @@ def buildhcand(self: Producer,
             leps1 = Electrons
             leps2 = Taus
 
+            # Create a decay mode array for the first lepton
+            leps1_decay_mode = ak.full_like(leps1.pt, -1)
+            # print(f"""leps1_decay_mode: {leps1_decay_mode}""")
+            # print(f"""leps2.decayMode: {leps2.decayMode}""")
+
+            # add decay mode array set to -1 for first lepton (electron)
+            leps1 = ak.with_field(leps1, leps1_decay_mode, "decayMode")
+
+            # Define the list of fields to keep
+            # fields_to_keep = ['dz', 'eta', 'mass', 'phi', 'pt', 'charge', 'decayMode']
+
+            # leps1 = leps1[fields_to_keep]
+            # leps2 = leps2[fields_to_keep]
+
+            leps1_flavour = ak.full_like(leps1.pt, 11)  # pid electron = 11
+            leps2_flavour = ak.full_like(leps2.pt, 15) # pid tau = 15
+
+            leps1 = ak.with_field(leps1, leps1_flavour, "lepton")
+            leps2  = ak.with_field(leps2, leps2_flavour, "lepton")
+
+            
+
             # Create pairs of leptons
             dtrpairs = ak.cartesian([leps1, leps2], axis=1)
+
+
+            print(f"""dtrpairs["0"] fields 1: {dtrpairs["0"].fields}""")
+            print(f"""dtrpairs["1"] fields 1: {dtrpairs["1"].fields}""") 
+
 
             # Select pairs based on certain criteria
             dtrpairs_sel = select_pairs(dtrpairs, events.MET, 50.0)
             # print(f"""dtrpairs["0"] fields: {dtrpairs_sel["0"].fields}""")
             # print(f"""dtrpairs["1"] fields: {dtrpairs_sel["1"].fields}""")
 
+
+            # print(f"""dtrpairs["0"] fields 1: {dtrpairs["0"].fields}""")
+            # print(f"""dtrpairs["1"] fields 1: {dtrpairs["1"].fields}""") 
+
             dtrpair = sort_and_get_pair_semilep(dtrpairs_sel)
             #print(f"dtrpair pt: {dtrpair.pt}")
+
             
+            # print(f"""dtrpairs["0"] fields 2: {dtrpairs["0"].fields}""")
+            # print(f"""dtrpairs["1"] fields 2: {dtrpairs["1"].fields}""") 
+
+            # print(f"""h_cand before where: {h_cand.fields}""")
+
+
             h_cand = ak.where(where, dtrpair, h_cand)
+
+            # print("where: ", where)
+
+            # print(f"""dtrpairs["0"] fields 3: {dtrpairs["0"].fields}""")
+            # print(f"""dtrpairs["1"] fields 3: {dtrpairs["1"].fields}""") 
+            # print(f"""h_cand selection step: {h_cand.fields}""")
+
+            # print(f"""h_cand[:,:1].fields: {h_cand[:,:1].fields}""")
+            # print(f"""h_cand[:,1:2].fields: {h_cand[:,1:2].fields}""") 
         
         elif (ch == "mutau"):
             print(f"channel: {ch}")
@@ -309,17 +391,71 @@ def buildhcand(self: Producer,
             where = where & nlep_mask
             leps1 = Muons
             leps2 = Taus
+
+            # Create a decay mode array for the first lepton
+            leps1_decay_mode = ak.full_like(leps1.pt, -1)
+            print(f"""leps1_decay_mode: {leps1_decay_mode}""")
+            print(f"""leps2.decayMode: {leps2.decayMode}""")
+
+            # add decay mode array set to -1 for first lepton (muon)
+            leps1 = ak.with_field(leps1, leps1_decay_mode, "decayMode")
+
+
+
+            leps1_flavour = ak.full_like(leps1.pt, 13)  # pid muon = 13
+            leps2_flavour = ak.full_like(leps2.pt, 15)  # pid tau = 15
+
+            leps1 = ak.with_field(leps1, leps1_flavour, "lepton")
+            leps2  = ak.with_field(leps2, leps2_flavour, "lepton")
+
+
+            # Define the list of fields to keep
+            # fields_to_keep = ['dz', 'eta', 'mass', 'phi', 'pt', 'charge', 'decayMode']
+
+            # leps1_selected = leps1[fields_to_keep]
+            # leps2_selected = leps2[fields_to_keep]
+
+
+            # print(f"""leps1_selected fields: {leps1_selected.fields}""")
+            # print(f"""leps2_selected fields: {leps2_selected.fields}""")
+
+            # dtrpairs = ak.cartesian([leps1_selected, leps2_selected], axis=1)
             dtrpairs = ak.cartesian([leps1, leps2], axis=1)
+
+            # print(f"""dtrpairs["0"] fields 1: {dtrpairs_sel["0"].fields}""")
+            # print(f"""dtrpairs["1"] fields 1: {dtrpairs_sel["1"].fields}""")  
+
+            
+
+            print(f"""dtrpairs : {dtrpair.fields}""")
+
+
+            # # Create pairs of leptons with specific fields retained
+            # dtrpairs = ak.zip({"leps1": leps1[fields_to_keep], "leps2": leps2[fields_to_keep]}, depth_limit=1)
+            
+            # print(f"""dtrpairs["0"] fields 2: {dtrpairs_sel["0"].fields}""")
+            # print(f"""dtrpairs["1"] fields 2: {dtrpairs_sel["1"].fields}""")  
+
+            
             dtrpairs_sel = select_pairs(dtrpairs, events.MET, 40.0)
+
+            # print(f"""dtrpairs["0"] fields 3: {dtrpairs_sel["0"].fields}""")
+            # print(f"""dtrpairs["1"] fields 3: {dtrpairs_sel["1"].fields}""")  
+
             # print(f"""dtrpairs["0"] fields: {dtrpairs_sel["0"].fields}""")
             # print(f"""dtrpairs["1"] fields: {dtrpairs_sel["1"].fields}""")  
 
             # Sort and get the selected pair
             dtrpair = sort_and_get_pair_semilep(dtrpairs_sel)
             #print(f"dtrpair pt: {dtrpair.pt}")
+
+            # print(f"""dtrpairs["0"] fields 4: {dtrpairs_sel["0"].fields}""")
+            # print(f"""dtrpairs["1"] fields 4: {dtrpairs_sel["1"].fields}""")  
             
             # Update the h-cand array with the selected pair
             h_cand = ak.where(where, dtrpair, h_cand)
+
+            print(f"""h_cand selection step: {h_cand.fields}""")
                
         elif (ch == "tautau"):
             print(f"channel: {ch}")
@@ -334,6 +470,11 @@ def buildhcand(self: Producer,
             leps = Taus
             print(f"""Taus fields: {Taus.fields}""")
             print(f"""Met fields: {events.MET.fields}""")
+
+
+            leps_flavour = ak.full_like(leps.pt, 15)  # pid tau = 15
+
+            leps = ak.with_field(leps, leps_flavour, "lepton")
 
 
             dtrpairs = ak.combinations(leps, 2, axis=-1)
@@ -354,74 +495,10 @@ def buildhcand(self: Producer,
             leps2 = dtrpairs["1"]
 
 
-            print(f"""Met fields: {events.MET.sumEt}""")
 
-            #print("MET.sumEt:", MET.sumEt)
+            # print(f"""Met fields: {events.MET.sumEt}""")
 
-            
-            metx = events.MET.sumEt * np.cos(events.MET.phi)
-            mety = events.MET.sumEt * np.sin(events.MET.phi)
-        
-            
-            print("metx:", metx)
-            print("mety:", mety)
-
-            # matrix = root.TMatrixD(2, 2)
-
-            # print("matrix")
-
-            # # Create the TMatrixD objects directly without a separate function
-            # covMET = []
-            # print("event.MET.covXY:", events.MET.covXY)
-            # print("event.MET.covXX:", events.MET.covXX)
-            # print("event.MET.covYY:", events.MET.covYY)
-            # # Iterate over the elements of event.MET.covXX, event.MET.covXY, and event.MET.covYY
-            # for covxx, covxy, covyy in zip(events.MET.covXX, events.MET.covXY, events.MET.covYY):
-            #     # Create a TMatrixD object for each covariance matrix
-            #     print("a")
-            #     matrix = root.TMatrixD(2, 2)
-            #     print("b")
-            #     matrix[0][0] = covxx
-            #     matrix[1][0] = covxy
-            #     matrix[0][1] = -covxy
-            #     matrix[1][1] = covyy
-            #     # Append the TMatrixD object to the list
-            #     covMET.append(matrix)
-            # # Convert the list of TMatrixD objects to Awkward Array
-            # covMET_ak = ak.Array(covMET)
-
-            # # Print the Awkward Array
-            # print(covMET_ak)
-
-
-            # # Create the TMatrixD objects
-            # covMET = create_TMatrix(event.MET.covXX, event.MET.covXY, event.MET.covYY)
-
-            # print(covMET)
-            # # Convert the list of TMatrixD objects to Awkward Array
-            # covMET_ak = ak.Array(covMET)
-
-            # print(covMET_ak)
-
-            # Print the Awkwa
-            # matrix = r.TMatrixD(2, 2, array1.flatten(), array2.flatten(), array3.flatten(), array4.flatten())
-
-
-
-            # # build MeasuredTauLepton ak.array for leptons 1 and leptons 2
-            # leps1_MeasuredTauLepton = [MeasuredTauLepton(*args) for args in zip(m.kDecayType.kTauToElecDecay, leps1["pt"],leps1["eta"],leps1["phi"],leps1["mass"],leps1["decay_mode"])]
-            # leps2_MeasuredTauLepton = [MeasuredTauLepton(*args) for args in zip(m.kDecayType.kTauToElecDecay, leps2["pt"],leps2["eta"],leps2["phi"],leps2["mass"],leps2["decay_mode"])]
-
-            # measuredTauLeptons = [leps1_MeasuredTauLepton,leps2_MeasuredTauLepton]
-
-
-            # svFitAlgo.integrate(measuredTauLeptons, MET.px, MET.phy, MET.cov)
-
-            # # Get Mtautau mass
-            # mTauTau_SVFit = svfit.getHistogramAdapter.getMass()
-
-
-    # print(f"h_cand : {h_cand.fields}")
+    print(f"h_cand : {h_cand.fields}")
 
     # Set the "hcand" column in the events array with the h-cand information
     events = set_ak_column(events, "hcand", h_cand)
