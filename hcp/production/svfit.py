@@ -168,134 +168,134 @@ def svfit(self: Producer,
     # plt.hist(ak.to_numpy(leps1["mass"]).flatten(), bins=20, range=(0, 2), alpha = 0.5)
     # plt.savefig("mass.pdf")    
 
-    # # Convert the Awkward Array to numpy array for leps1 
-    # leps2_pt = ak.to_numpy(leps2["pt"])
-    # leps2_eta = ak.to_numpy(leps2["eta"])
-    # leps2_phi = ak.to_numpy(leps2["phi"])
-    # leps2_mass = ak.to_numpy(leps2["mass"])
-    # leps2_dm = ak.to_numpy(leps2["decayMode"])
-    # leps2_flavor = ak.to_numpy(leps2["lepton"])
+    # Convert the Awkward Array to numpy array for leps1 
+    leps2_pt = ak.to_numpy(leps2["pt"])
+    leps2_eta = ak.to_numpy(leps2["eta"])
+    leps2_phi = ak.to_numpy(leps2["phi"])
+    leps2_mass = ak.to_numpy(leps2["mass"])
+    leps2_dm = ak.to_numpy(leps2["decayMode"])
+    leps2_flavor = ak.to_numpy(leps2["lepton"])
 
-    # print_if_verbose(verb,"leps2 pt = ", leps2_pt )
-    # print_if_verbose(verb,"leps2 eta = ", leps2_eta )
-    # print_if_verbose(verb,"leps2 phi = ", leps2_phi )
-    # print_if_verbose(verb,"leps2 mass = ", leps2_mass )
-    # print_if_verbose(verb,"leps2 decayMode = ", leps2_dm)
+    print_if_verbose(verb,"leps2 pt = ", leps2_pt )
+    print_if_verbose(verb,"leps2 eta = ", leps2_eta )
+    print_if_verbose(verb,"leps2 phi = ", leps2_phi )
+    print_if_verbose(verb,"leps2 mass = ", leps2_mass )
+    print_if_verbose(verb,"leps2 decayMode = ", leps2_dm)
 
-
-    # # # # Create a TH1D histogram for metx
-    # # hist1 = root.TH1D("hist_mass_leps1", "mass", 50, 0, 5)
-    # # hist2 = root.TH1D("hist_mass_leps2", "mass", 50, 0, 5)
-
-    # # # Fill the histogram with metx values
-    # # for mass in leps1_mass:
-    # #     hist1.Fill(mass)
-
-    # # for mass in leps2_mass:
-    # #     hist2.Fill(mass)
-
-    # # # Draw the histogram
-    # # hist1.Draw()
-
-    # # # Save the histogram in a root file
-    # # root_file = root.TFile("hist_mass1.root", "RECREATE")
-    # # hist1.Write()
-    # # root_file.Close()
-    
-    # # # Draw the histogram
-    # # hist2.Draw()
-
-    # # # Save the histogram in a root file
-    # # root_file = root.TFile("hist_mass2.root", "RECREATE")
-    # # hist2.Write()
-    # # root_file.Close()
-
-    # # Define the MeasuredTauLepton objects for the SVFit algorithm
-    # leps1_MeasuredTauLepton = np.array([MeasuredTauLepton(*args) for args in zip(decayType, leps1_pt, leps1_eta, leps1_phi ,leps1_mass, leps1_dm)])
-    # leps2_MeasuredTauLepton = np.array([MeasuredTauLepton(1,*args) for args in zip(leps2_pt, leps2_eta, leps2_phi ,leps2_mass, leps2_dm)])
-
-    # print_if_verbose(verb,f"leps1_MeasuredTauLepton : {leps1_MeasuredTauLepton}")
-    # print_if_verbose(verb,f"leps2_MeasuredTauLepton : {leps2_MeasuredTauLepton}")
-
-    # svfit_verbosity = 0
-
-    # print_if_verbose(verb,"svfit_verbosity : ", svfit_verbosity)
-    # svFitAlgo = ClassicSVfit(svfit_verbosity)
-
-    # massContraint = 91 # Z mass GeV
-    # #massContraint = 125.06 # Higgs mass GeV
-
-    # # Set the mass constraint
-    # svFitAlgo.setDiTauMassConstraint(massContraint)
-
-    # mass_array = []
-    # err_mass_array = []
-    
-    # start_time = time.time()
-
-    # # Loop over each event 
-    # print(f"len(leps1_MeasuredTauLepton) : {len(leps1_MeasuredTauLepton)}")
-    # for i in range(len(leps1_MeasuredTauLepton)):
-    # #for i in range(1000):
-
-    #     # Set the likelihood file name
-    #     # svfit_filename = "testSVfit_hacand" + str(i) + ".root"
-    #     svfit_filename = ""
-    #     svFitAlgo.setLikelihoodFileName(svfit_filename)
-
-    #     svFitAlgo.addLogM_fixed(True, kappa_np[i])
-    #     # svFitAlgo.addLogM_dynamic(False)
-
-    #     leps_MeasuredTauLepton = [leps1_MeasuredTauLepton[i], leps2_MeasuredTauLepton[i]]
-
-    #     # svFitAlgo.prepareLeptonInput(leps_MeasuredTauLepton)
-    #     # svFitAlgo.addMETEstimate(metx[i], mety[i], rootMETMatrices[i]) 
-    #     # print_if_verbose(verb,"svFitAlgo.prepareLeptonInput= ", svFitAlgo.prepareLeptonInput(leps_MeasuredTauLepton))
-
-    #     # Perform integration for each element
-    #     print_if_verbose(verb,f"leps_MeasuredTauLepton[i] : {leps_MeasuredTauLepton}")
-    #     svFitAlgo.integrate(leps_MeasuredTauLepton, metx[i], mety[i], rootMETMatrices[i])
-
-    #     isValidSolution = svFitAlgo.isValidSolution()
-    #     print_if_verbose(verb,f"isValidSolution : {isValidSolution}")
-    #     mass = svFitAlgo.getHistogramAdapter().getMass()
-    #     errmass = svFitAlgo.getHistogramAdapter().getMassErr()
-    #     print( f"mass : {mass}")
-    #     print( f"errmass : {errmass}")
-    #     mass_array.append(mass)
-    #     err_mass_array.append(errmass)
-        
-    # end_time = time.time()
-
-    # execution_time_ = end_time - start_time
-    
-    # print(f"Execution time SVFit: {execution_time_} seconds")
-        
-    # print_if_verbose(verb,f"mass_array : {mass_array}")
-    # print_if_verbose(verb,f"err_mass_array : {err_mass_array}")
-
-    # # Make Mass plot
-    # fig, ax = plt.subplots()
-    # plt.style.use(mplhep.style.CMS)
-    # plt.hist(mass_array, bins=130, range=(1, 131), alpha = 0.5)
-    # plt.xlabel("Mass in GeV")
-    # plt.ylabel("Events")
-    # plt.savefig("mass_SVFit.pdf") 
 
     # # # Create a TH1D histogram for metx
-    # hist1 = root.TH1D("mass_SVFit", "mass", 130, 0, 130)
+    # hist1 = root.TH1D("hist_mass_leps1", "mass", 50, 0, 5)
+    # hist2 = root.TH1D("hist_mass_leps2", "mass", 50, 0, 5)
 
     # # Fill the histogram with metx values
-    # for mass in mass_array:
+    # for mass in leps1_mass:
     #     hist1.Fill(mass)
+
+    # for mass in leps2_mass:
+    #     hist2.Fill(mass)
 
     # # Draw the histogram
     # hist1.Draw()
 
     # # Save the histogram in a root file
-    # root_file = root.TFile("mass_SVFit.root", "RECREATE")
+    # root_file = root.TFile("hist_mass1.root", "RECREATE")
     # hist1.Write()
     # root_file.Close()
+    
+    # # Draw the histogram
+    # hist2.Draw()
+
+    # # Save the histogram in a root file
+    # root_file = root.TFile("hist_mass2.root", "RECREATE")
+    # hist2.Write()
+    # root_file.Close()
+
+    # Define the MeasuredTauLepton objects for the SVFit algorithm
+    leps1_MeasuredTauLepton = np.array([MeasuredTauLepton(*args) for args in zip(decayType, leps1_pt, leps1_eta, leps1_phi ,leps1_mass, leps1_dm)])
+    leps2_MeasuredTauLepton = np.array([MeasuredTauLepton(1,*args) for args in zip(leps2_pt, leps2_eta, leps2_phi ,leps2_mass, leps2_dm)])
+
+    print_if_verbose(verb,f"leps1_MeasuredTauLepton : {leps1_MeasuredTauLepton}")
+    print_if_verbose(verb,f"leps2_MeasuredTauLepton : {leps2_MeasuredTauLepton}")
+
+    svfit_verbosity = 0
+
+    print_if_verbose(verb,"svfit_verbosity : ", svfit_verbosity)
+    svFitAlgo = ClassicSVfit(svfit_verbosity)
+
+    massContraint = 91 # Z mass GeV
+    #massContraint = 125.06 # Higgs mass GeV
+
+    # Set the mass constraint
+    svFitAlgo.setDiTauMassConstraint(massContraint)
+
+    mass_array = []
+    err_mass_array = []
+    
+    start_time = time.time()
+
+    # Loop over each event 
+    print(f"len(leps1_MeasuredTauLepton) : {len(leps1_MeasuredTauLepton)}")
+    for i in range(len(leps1_MeasuredTauLepton)):
+    #for i in range(1000):
+
+        # Set the likelihood file name
+        # svfit_filename = "testSVfit_hacand" + str(i) + ".root"
+        svfit_filename = ""
+        svFitAlgo.setLikelihoodFileName(svfit_filename)
+
+        svFitAlgo.addLogM_fixed(True, kappa_np[i])
+        # svFitAlgo.addLogM_dynamic(False)
+
+        leps_MeasuredTauLepton = [leps1_MeasuredTauLepton[i], leps2_MeasuredTauLepton[i]]
+
+        # svFitAlgo.prepareLeptonInput(leps_MeasuredTauLepton)
+        # svFitAlgo.addMETEstimate(metx[i], mety[i], rootMETMatrices[i]) 
+        # print_if_verbose(verb,"svFitAlgo.prepareLeptonInput= ", svFitAlgo.prepareLeptonInput(leps_MeasuredTauLepton))
+
+        # Perform integration for each element
+        print_if_verbose(verb,f"leps_MeasuredTauLepton[i] : {leps_MeasuredTauLepton}")
+        svFitAlgo.integrate(leps_MeasuredTauLepton, metx[i], mety[i], rootMETMatrices[i])
+
+        isValidSolution = svFitAlgo.isValidSolution()
+        print_if_verbose(verb,f"isValidSolution : {isValidSolution}")
+        mass = svFitAlgo.getHistogramAdapter().getMass()
+        errmass = svFitAlgo.getHistogramAdapter().getMassErr()
+        print( f"mass : {mass}")
+        print( f"errmass : {errmass}")
+        mass_array.append(mass)
+        err_mass_array.append(errmass)
+        
+    end_time = time.time()
+
+    execution_time_ = end_time - start_time
+    
+    print(f"Execution time SVFit: {execution_time_} seconds")
+        
+    print_if_verbose(verb,f"mass_array : {mass_array}")
+    print_if_verbose(verb,f"err_mass_array : {err_mass_array}")
+
+    # Make Mass plot
+    fig, ax = plt.subplots()
+    plt.style.use(mplhep.style.CMS)
+    plt.hist(mass_array, bins=130, range=(1, 131), alpha = 0.5)
+    plt.xlabel("Mass in GeV")
+    plt.ylabel("Events")
+    plt.savefig("mass_SVFit.pdf") 
+
+    # # Create a TH1D histogram for metx
+    hist1 = root.TH1D("mass_SVFit", "mass", 130, 0, 130)
+
+    # Fill the histogram with metx values
+    for mass in mass_array:
+        hist1.Fill(mass)
+
+    # Draw the histogram
+    hist1.Draw()
+
+    # Save the histogram in a root file
+    root_file = root.TFile("mass_SVFit.root", "RECREATE")
+    hist1.Write()
+    root_file.Close()
 
 
     # print(f"h_cand : {breakhere}")
