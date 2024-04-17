@@ -14,7 +14,7 @@ from columnflow.selection.cms.json_filter import json_filter
 from columnflow.selection.cms.met_filters import met_filters
 from columnflow.production.processes import process_ids
 from columnflow.production.cms.mc_weight import mc_weight
-from columnflow.util import maybe_import
+from columnflow.util import maybe_import, dev_sandbox
 
 from hcp.selection.dl_veto import dilep_res_veto_selection
 from hcp.selection.trigger import trigger_selection
@@ -26,7 +26,6 @@ from hcp.production.prepare_objects import buildhcand
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
-
 
 @selector(
     uses={
@@ -42,6 +41,7 @@ ak = maybe_import("awkward")
         buildhcand,
         "hcand.*",
     },
+    #sandbox=dev_sandbox("bash::$HCP_BASE/sandboxes/venv_svfit_integration_dev.sh"),
     exposed=True,
 )
 def main(
@@ -88,20 +88,22 @@ def main(
     results += hcand_results
     event_sel_json_and_met_filter_and_dlresveto_and_trigger_and_lepton_and_hcand = reduce(and_, results.steps.values())
     
+    # from IPython import embed; embed()
+
     # jet selection
     events, jet_results = self[jet_selection](events, **kwargs)
     results += jet_results
 
     # combined event selection after all steps
     event_sel = reduce(and_, results.steps.values())
-    results.main["event"] = event_sel
+    results.event = event_sel
 
     # create process ids
     events = self[process_ids](events, **kwargs)
 
     # add cutflow features, passing per-object masks
     events = self[cutflow_features](events, results.objects, **kwargs)
-
+ 
     # increment stats
     weight_map = {
         "num_events": Ellipsis,
@@ -118,7 +120,7 @@ def main(
             **weight_map,
             # mc weight for all events
             "sum_mc_weight": (events.mc_weight, Ellipsis),
-            "sum_mc_weight_selected": (events.mc_weight, results.main.event),
+            "sum_mc_weight_selected": (events.mc_weight, results.event),
         }
         group_map = {
             # per process
