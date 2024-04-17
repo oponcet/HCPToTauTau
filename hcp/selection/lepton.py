@@ -34,7 +34,6 @@ ak = maybe_import("awkward")
         # new columns
         "channel_id", "single_triggered", "cross_triggered", "m_ll", "dr_ll",
     },
-    sandbox=dev_sandbox("bash::$HCP_BASE/sandboxes/venv_columnar_tf.sh"),
 )
 def lepton_selection(
     self: Selector,
@@ -49,11 +48,6 @@ def lepton_selection(
     ch_etau = self.config_inst.get_channel("etau")
     ch_mutau = self.config_inst.get_channel("mutau")
     ch_tautau = self.config_inst.get_channel("tautau")
-
-    tf = maybe_import("tensorflow")
-
-    print(">>>>>>>>>>>>>>>> tf = ", tf)
-
     print(f"channels: {ch_etau}, {ch_mutau}, {ch_tautau}")
     
     # prepare vectors for output vectors
@@ -70,12 +64,12 @@ def lepton_selection(
     
     # perform each lepton election step separately per trigger
     for trigger, trigger_fired, leg_masks in trigger_results.x.trigger_data:
-        print(f"trigger: {trigger}")
-        print(f"trigger_fired: {trigger_fired}")
+        # print(f"trigger: {trigger}")
+        # print(f"trigger_fired: {trigger_fired}")
         is_single = trigger.has_tag("single_trigger")
         is_cross = trigger.has_tag("cross_trigger")
 
-        print(f"Triggered? is_single: {is_single} :: is_cross: {is_cross} ")
+        # print(f"Triggered? is_single: {is_single} :: is_cross: {is_cross} ")
         
         # electron selection
         electron_indices, electron_veto_indices = self[electron_selection](
@@ -142,8 +136,8 @@ def lepton_selection(
 
             sel_electron_indices = ak.where(where_etau, electron_indices, sel_electron_indices)
             sel_tau_indices = ak.where(where_etau, tau_indices, sel_tau_indices)            
-            print(f"ele idxs : {electron_indices}")
-            print(f"tau idxs : {tau_indices}")
+            # print(f"ele idxs : {electron_indices}")
+            # print(f"tau idxs : {tau_indices}")
 
             m_ll_val = new_invariant_mass(events.Electron[sel_electron_indices][:,:1], events.Tau[sel_tau_indices][:,:1])
             m_ll = ak.where(where_etau, m_ll_val, m_ll)
