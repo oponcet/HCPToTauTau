@@ -238,14 +238,15 @@ def add_config(
             "Muon.pt", "Muon.eta", "Muon.phi", "Muon.mass", "Muon.pfRelIso03_all",
             "Electron.pt", "Electron.eta", "Electron.phi", "Electron.mass", "Electron.pfRelIso03_all",
             "Tau.pt", "Tau.eta", "Tau.phi", "Tau.mass", "Tau.idDeepTau2017v2p1VSe", "Tau.idDeepTau2017v2p1VSmu", "Tau.idDeepTau2017v2p1VSjet", "Tau.decayMode",
-            "MET.pt", "MET.phi", "MET.significance", "MET.covXX", "MET.covXY", "MET.covYY", "MET.*"
+            "MET.pt", "MET.phi", "MET.significance","MET.sumEt", "MET.covXX", "MET.covXY", "MET.covYY", "MET.*"
             "PV.npvs",
             # columns added during selection
             "deterministic_seed", "process_id", "mc_weight", "cutflow.*", "channel_id",
             "single_triggered", "cross_triggered",
             "tau2_isolated", "m_ll", "dr_ll",
-            "hcand.pt", "hcand.eta", "hcand.phi", "hcand.mass", "hcand_invmass", "hcand_dr",
+            "hcand.pt", "hcand.eta", "hcand.phi", "hcand.mass", "hcand_invmass", "hcand_dr", "hcand.decayMode", "hcand.lepton",
             # "leptons_os",
+            "Electron.decayMode", "Muon.decayMode",
         },
         "cf.MergeSelectionMasks": {
             "normalization_weight", "process_id", "category_ids", "channel_id", "cutflow.*",

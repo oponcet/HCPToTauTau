@@ -208,7 +208,7 @@ def add_config(
             "Jet.pt", "Jet.eta", "Jet.phi", "Jet.mass", "Jet.btagDeepFlavB", "Jet.hadronFlavour",
             "Muon.pt", "Muon.eta", "Muon.phi", "Muon.mass", "Muon.pfRelIso04_all",
             "Electron.pt", "Electron.eta", "Electron.phi", "Electron.mass",
-            "MET.pt", "MET.phi", "MET.significance", "MET.covXX", "MET.covXY", "MET.covYY",
+            "MET.pt", "MET.phi", "MET.significance","MET.sumEt", "MET.covXX", "MET.covXY", "MET.covYY",
             "PV.npvs",
             # columns added during selection
             "deterministic_seed", "process_id", "mc_weight", "cutflow.*", "channel_id",
