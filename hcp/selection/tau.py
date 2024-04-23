@@ -12,6 +12,7 @@ from columnflow.util import maybe_import, DotDict
 from hcp.config.trigger_util import Trigger
 from hcp.util import invariant_mass, deltaR, new_invariant_mass, trigger_object_matching, IF_NANO_V9, IF_NANO_V11#, get_nleps_dl_veto
 
+
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
 
@@ -24,7 +25,7 @@ ak = maybe_import("awkward")
         "Tau.idDeepTau2017v2p1VSmu", "Tau.idDeepTau2017v2p1VSjet",
         "TrigObj.pt", "TrigObj.eta", "TrigObj.phi",
         "Electron.pt", "Electron.eta", "Electron.phi",
-        "Muon.pt", "Muon.eta", "Muon.phi",
+        "Muon.pt", "Muon.eta", "Muon.phi", "GenPart.*", 
     },
     # shifts are declared dynamically below in tau_selection_init
     exposed=False,
@@ -36,6 +37,7 @@ def tau_selection(
     leg_masks: list[ak.Array],
     electron_indices: ak.Array,
     muon_indices: ak.Array,
+    gentau: ak.Array,
     **kwargs,
 ) -> tuple[ak.Array, ak.Array]:
     """
@@ -115,6 +117,9 @@ def tau_selection(
         base_mask = base_mask & ak.all(events.Tau.metric_table(events.Electron[electron_indices]) > 0.5, axis=2)
     if muon_indices is not None:
         base_mask = base_mask & ak.all(events.Tau.metric_table(events.Muon[muon_indices]) > 0.5, axis=2)
+    if gentau is not None:
+        base_mask = base_mask & ak.all(events.Tau.metric_table(gentau) < 0.5, axis=2) # 0.5 is the deltaR cut
+
 
     # add trigger object masks
     if is_cross_e or is_cross_mu:
@@ -142,6 +147,13 @@ def tau_selection(
     # additional mask to select final, Medium isolated taus
     # iso_mask = events.Tau[base_indices].idDeepTau2017v2p1VSjet >= tau_vs_jet.medium
 
+    # gentau_selection
+
+    # gentau_selection
+    # events = self[gentau_selection](events, **kwargs)
+
+    print("GenPart = ", events.GenPart.fields)
+
     return base_indices#, iso_mask
 
 
@@ -153,3 +165,56 @@ def tau_selection_init(self: Selector) -> None:
         for shift_inst in self.config_inst.shifts
         if shift_inst.has_tag("tec")
     }
+
+
+
+@selector(
+    uses={
+        # nano columns
+        "Tau.pt", "Tau.eta", "Tau.phi", "Tau.dz", "Tau.idDeepTau2017v2p1VSe",
+        "Tau.idDeepTau2017v2p1VSmu", "Tau.idDeepTau2017v2p1VSjet",
+        "TrigObj.pt", "TrigObj.eta", "TrigObj.phi",
+        "Electron.pt", "Electron.eta", "Electron.phi",
+        "Muon.pt", "Muon.eta", "Muon.phi", "GenPart.*",
+    },
+    exposed=False,
+)
+def gentau_selection(
+    self: Selector,
+    events: ak.Array,
+    **kwargs,
+) -> ak.Array:
+#    GenPart =  ['eta', 'mass', 'phi', 'pt', 'genPartIdxMother', 'pdgId', 'status', 'statusFlags', 'genPartIdxMotherG', 'distinctParentIdxG', 
+#    'childrenIdxG', 'distinctChildrenIdxG', 'distinctChildrenDeepIdxG']
+
+
+    GenPart = events.GenPart
+        # masks to select gen tau+ and tau-
+    isgentau = ((np.abs(GenPart.pdgId) == 15) #  & (GenPart.hasFlags(["isPrompt","isFirstCopy"]))
+                & (GenPart.status == 2)
+                & (GenPart.pt >= 10)
+                & (np.abs(GenPart.eta) <= 2.3))
+    
+    # get gen tau+ and tau- objects from events GenParts
+    gentau = GenPart[isgentau]
+
+    # get tau mother indices
+    gentau_momidx    = gentau.distinctParent.genPartIdxMother
+    is_gentau_from_h = (GenPart[gentau_momidx].pdgId == 25) & (GenPart[gentau_momidx].status == 22)
+    gentau_momidx    = gentau_momidx[is_gentau_from_h]
+
+    # # get tau products
+    # gentau_children = gentau.distinctChildren
+    
+    #embed()
+    #1/0
+    SelectionResult = {
+        "steps": {
+            "gentau_selection: has 2 gentau": (ak.num(gentau.pdgId, axis=1) == 2),
+            "gentau_selection: tau+ and tau-": (ak.sum(gentau.pdgId, axis=1) == 0),
+            "gentau_selection: two moms are h": (ak.num(gentau_momidx, axis=1) == 2),
+        },
+    }
+
+    return gentau, SelectionResult
+

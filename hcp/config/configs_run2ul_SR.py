@@ -238,7 +238,7 @@ def add_config(
             "Muon.pt", "Muon.eta", "Muon.phi", "Muon.mass", "Muon.pfRelIso03_all",
             "Electron.pt", "Electron.eta", "Electron.phi", "Electron.mass", "Electron.pfRelIso03_all",
             "Tau.pt", "Tau.eta", "Tau.phi", "Tau.mass", "Tau.idDeepTau2017v2p1VSe", "Tau.idDeepTau2017v2p1VSmu", "Tau.idDeepTau2017v2p1VSjet", "Tau.decayMode",
-            "MET.pt", "MET.phi", "MET.significance","MET.sumEt", "MET.covXX", "MET.covXY", "MET.covYY", "MET.*"
+            "MET.pt", "MET.phi", "MET.significance","MET.sumEt", "MET.covXX", "MET.covXY", "MET.covYY", "MET.*", "GenPart.*",
             "PV.npvs",
             # columns added during selection
             "deterministic_seed", "process_id", "mc_weight", "cutflow.*", "channel_id",

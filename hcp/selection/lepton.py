@@ -12,7 +12,7 @@ from columnflow.util import maybe_import, DotDict, dev_sandbox
 
 from hcp.selection.muon import muon_selection, muon_dl_veto_selection
 from hcp.selection.electron import electron_selection, electron_dl_veto_selection
-from hcp.selection.tau import tau_selection
+from hcp.selection.tau import tau_selection, gentau_selection
 
 from hcp.config.trigger_util import Trigger
 from hcp.util import deltaR, new_invariant_mass
@@ -24,15 +24,15 @@ ak = maybe_import("awkward")
 
 @selector(
     uses={
-        electron_selection, muon_selection, tau_selection,
+        electron_selection, muon_selection, tau_selection, gentau_selection,
         # nano columns
         "event", "Electron.charge", "Muon.charge", "Tau.charge", "Electron.mass", "Muon.mass",
-        "Tau.mass",
+        "Tau.mass", "GenPart.*"
     },
     produces={
-        electron_selection, muon_selection, tau_selection,
+        electron_selection, muon_selection, tau_selection, gentau_selection,
         # new columns
-        "channel_id", "single_triggered", "cross_triggered", "m_ll", "dr_ll",
+        "channel_id", "single_triggered", "cross_triggered", "m_ll", "dr_ll", "GenPart.*",
     },
 )
 def lepton_selection(
@@ -98,10 +98,19 @@ def lepton_selection(
             leg_masks,
             electron_indices,
             muon_indices,
+            # gentaus,
+            gentau = None, # Not do genmatching 
             #call_force=True,
             **kwargs,
         )
         print("tau idx done")
+
+        # gentau selection 
+        gentaus, _ = self[gentau_selection](
+            events, 
+            **kwargs,
+        )
+        print("gentau = ", gentaus)
 
         # lepton pair selecton per trigger via lepton counting
         if trigger.has_tag({"single_e", "cross_e_tau"}):            
@@ -231,12 +240,18 @@ def lepton_selection(
     events = set_ak_column(events, "m_ll", m_ll)
     events = set_ak_column(events, "dr_ll", dr_ll)
     print("here3")
-    
+
     return events, SelectionResult(
         steps={
             "lepton": channel_id != 0,
+            "gentau_selection: has 2 gentau": (ak.num(gentaus.pdgId, axis=1) == 2),
+            "gentau_selection: tau+ and tau-": (ak.sum(gentaus.pdgId, axis=1) == 0),
+            "gentau_selection: two moms are h": (ak.num(gentaus.distinctParent.genPartIdxMother, axis=1) == 2),
         },
         objects={
+            # "GenPart": {
+            #     "GenTaus": gentaus,
+            # },
             "Electron": {
                 "Electron": sel_electron_indices,
             },
@@ -248,6 +263,7 @@ def lepton_selection(
             },
         },
         aux={
+            "GenTaus": gentaus,
             "Electrons": events.Electron[sel_electron_indices],
             "Muons": events.Muon[sel_muon_indices],
             "Taus": events.Tau[sel_tau_indices],

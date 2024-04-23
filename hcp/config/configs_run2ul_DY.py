@@ -209,7 +209,7 @@ def add_config(
             "Muon.pt", "Muon.eta", "Muon.phi", "Muon.mass", "Muon.pfRelIso04_all",
             "Electron.pt", "Electron.eta", "Electron.phi", "Electron.mass",
             "MET.pt", "MET.phi", "MET.significance","MET.sumEt", "MET.covXX", "MET.covXY", "MET.covYY",
-            "PV.npvs",
+            "PV.npvs", "GenPart.*"
             # columns added during selection
             "deterministic_seed", "process_id", "mc_weight", "cutflow.*", "channel_id",
             "leptons_os", "leptons_ss", "single_triggered", "double_triggered",

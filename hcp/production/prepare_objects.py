@@ -47,8 +47,8 @@ def select_pairs(dtrpairs: ak.Array,
     # Unzip the dtrpairs array into two separate arrays        
     lep1unzip, lep2unzip = ak.unzip(dtrpairs)
 
-    print(f"""dtrpairs["0"] fields: {dtrpairs["0"].fields}""")
-    print(f"""dtrpairs["1"] fields: {dtrpairs["1"].fields}""")
+    # print(f"""dtrpairs["0"] fields: {dtrpairs["0"].fields}""")
+    # print(f"""dtrpairs["1"] fields: {dtrpairs["1"].fields}""")
 
     # Create masks to filter pairs of objects
     charge_mask = (lep1unzip.charge + lep2unzip.charge) == 0 # opposite charge
@@ -67,7 +67,7 @@ def select_pairs(dtrpairs: ak.Array,
     dtrpairs = dtrpairs[dtr_mask]
             
     #from IPython import embed; embed()
-    print(f"""dtrpairs["0"] fields: {dtrpairs["0"].fields}""")
+    # print(f"""dtrpairs["0"] fields: {dtrpairs["0"].fields}""")
     print(f"""dtrpairs["1"] fields: {dtrpairs["1"].fields}""")    # Return the filtered pairs
     return dtrpairs
 

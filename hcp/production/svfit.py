@@ -275,15 +275,15 @@ def svfit(self: Producer,
     print_if_verbose(verb,f"err_mass_array : {err_mass_array}")
 
     # Make Mass plot
-    fig, ax = plt.subplots()
-    plt.style.use(mplhep.style.CMS)
-    plt.hist(mass_array, bins=130, range=(1, 131), alpha = 0.5)
-    plt.xlabel("Mass in GeV")
-    plt.ylabel("Events")
-    plt.savefig("mass_SVFit.pdf") 
+    # fig, ax = plt.subplots()
+    # plt.style.use(mplhep.style.CMS)
+    # plt.hist(mass_array, bins=130, range=(1, 131), alpha = 0.5)
+    # plt.xlabel("Mass in GeV")
+    # plt.ylabel("Events")
+    # plt.savefig("mass_SVFit.pdf") 
 
     # # Create a TH1D histogram for metx
-    hist1 = root.TH1D("mass_SVFit", "mass", 130, 0, 130)
+    hist1 = root.TH1D("mass_SVFit", "mass", 200, 0, 200)
 
     # Fill the histogram with metx values
     for mass in mass_array:
@@ -485,16 +485,16 @@ def fastMTT(self: Producer,
 
     print(f"Execution time FastMTT: {execution_time_} seconds")
 
-    # Make Mass plot
-    fig, ax = plt.subplots()
-    plt.style.use(mplhep.style.CMS)
-    plt.hist(ditaumass_array, bins=200, range=(0, 200), alpha = 0.5)
-    plt.xlabel("Mass in GeV")
-    plt.ylabel("Events")
-    plt.savefig("mass_FastMTT.pdf") 
+    # # Make Mass plot
+    # fig, ax = plt.subplots()
+    # plt.style.use(mplhep.style.CMS)
+    # plt.hist(ditaumass_array, bins=200, range=(0, 200), alpha = 0.5)
+    # plt.xlabel("Mass in GeV")
+    # plt.ylabel("Events")
+    # plt.savefig("mass_FastMTT.pdf") 
 
     # # Create a TH1D histogram for metx
-    hist1 = root.TH1D("mass_FastMTT", "mass", 130, 0, 130)
+    hist1 = root.TH1D("mass_FastMTT", "mass", 200, 0, 200)
 
     # Fill the histogram with metx values
     for mass in ditaumass_array:
