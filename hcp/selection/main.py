@@ -29,6 +29,8 @@ from hcp.production.prepare_objects import buildhcand
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
+coffea = maybe_import("coffea")
+maybe_import("coffea.nanoevents.methods.nanoaod")
 
 @selector(
     uses={
@@ -93,19 +95,19 @@ def main(
     #     **kwargs,
     # )
     # print("gentau = ", gentaus)
-    hcand_Lzt = events.hcand * 1 # transform into LorentzVector
-    GenPart_Lzt = events.GenPart * 1 # transform into LorentzVector
+    # hcand_Lzt = events.hcand * 1 # transform into LorentzVector
+    # GenPart_Lzt = events.GenPart * 1 # transform into LorentzVector
 
-    print("hcand_Lzt fields = ", hcand_Lzt.fields)
-    print("GenPart_Ltz fields = ", GenPart_Lzt.fields)
-    print("leps 1 = ", events.hcand[:,:1]*1)
-    print("leps 2 = ", events.hcand[:,1:2]*1)
-    print("GenPart = ", events.GenPart)
-    # from IPython import embed; embed()
+    # print("hcand_Lzt fields = ", hcand_Lzt.fields)
+    # print("GenPart_Ltz fields = ", GenPart_Lzt.fields)
+    # print("leps 1 = ", events.hcand[:,:1]*1)
+    # print("leps 2 = ", events.hcand[:,1:2]*1)
+    # print("GenPart = ", events.GenPart)
+    # # from IPython import embed; embed()
 
 
     # gen_mask = ak.all(hcand_Lzt.metric_table(GenPart_Lzt) < 0.5, axis=2) # 0.5 is the deltaR cut
-    gen_mask = ak.any(hcand_Lzt.metric_table(GenPart_Lzt)<0.5, axis=2) # 0.5 is the deltaR cut
+    # gen_mask = ak.any(hcand_Lzt.metric_table(GenPart_Lzt)<0.5, axis=2) # 0.5 is the deltaR cut
     # gen_mask = ak.all(dR_hcand_GenPart < 0.5, axis=2) # 0.5 is the deltaR cut
     # gen_mask_leps1 = ak.all(events.hcand[:,:1].metric_table(events.GenPart) < 0.5 , axis=2) # 0.5 is the deltaR cut
     # gen_mask_leps2 = ak.all(events.hcand[:,1:2].metric_table(gentau) < 0.5 , axis=2) # 0.5 is the deltaR cut
@@ -149,93 +151,109 @@ def main(
 
 
     # Test: 2 Events
-    # True Info                                                                                                                                                      
-    #   g11 is close to h11, g12 to h12                                                                                                                            
-    #   g21 is close to h22, g22 to h21   
+    # # True Info                                                                                                                                                      
+    # #   g11 is close to h11, g12 to h12                                                                                                                            
+    # #   g21 is close to h22, g22 to h21   
 
-    gentaus = lepton_results.x.GenTaus * 1      #  [ [g11, g12], [g21, g22] ]   gentau information                                                                                                 
-    hcand1  = events.hcand[:,0:1] * 1 #  [ [h11], [h21] ]     hcand1 = lepton 1                                                                                                     
-    hcand2  = events.hcand[:,1:2] * 1 #  [ [h12], [h22] ]     hacand2 = lepton 2 taus                                                                                                   
+    # gentaus = lepton_results.x.GenTaus * 1      #  [ [g11, g12], [g21, g22] ]   gentau information                                                                                                 
+    # hcand1  = events.hcand[:,0:1] * 1 #  [ [h11], [h21] ]     hcand1 = lepton 1                                                                                                     
+    # hcand2  = events.hcand[:,1:2] * 1 #  [ [h12], [h22] ]     hacand2 = lepton 2 taus                                                                                                   
 
-    print("1")
-    # deltaR between gentaus and hcands                                                                                                                           
-    dr_hcand1_gentaus = hcand1.metric_table(gentaus)             #  [ [[0.3, 1.2]], [[1.3, 0.2]] ]                                                                
-    dr_hcand1_gentaus = ak.firsts(dr_hcand1_gentaus, axis=1)     #  [ [0.3, 1.2], [1.3, 0.2] ]                                                                    
-    dr_hcand2_gentaus = hcand2.metric_table(gentaus)             #  [ [[2.3, 0.2]], [[0.3, 1.2]] ]                                                                
-    dr_hcand2_gentaus = ak.firsts(dr_hcand2_gentaus, axis=1)     #  [ [2.3, 0.2], [0.3, 1.2] ]                                                                    
+    # print("1")
+    # # deltaR between gentaus and hcands                                                                                                                           
+    # dr_hcand1_gentaus = hcand1.metric_table(gentaus)             #  [ [[0.3, 1.2]], [[1.3, 0.2]] ]                                                                
+    # dr_hcand1_gentaus = ak.firsts(dr_hcand1_gentaus, axis=1)     #  [ [0.3, 1.2], [1.3, 0.2] ]                                                                    
+    # dr_hcand2_gentaus = hcand2.metric_table(gentaus)             #  [ [[2.3, 0.2]], [[0.3, 1.2]] ]                                                                
+    # dr_hcand2_gentaus = ak.firsts(dr_hcand2_gentaus, axis=1)     #  [ [2.3, 0.2], [0.3, 1.2] ]                                                                    
 
-    print("2")
-    # Get the indices of the gentaus closed to the hcands                                                                                                         
-    sorted_idx_hcand1_gentaus = ak.argsort(dr_hcand1_gentaus, axis=1) # [ [0, 1], [1, 0] ]                                                                        
-    sorted_idx_hcand2_gentaus = ak.argsort(dr_hcand2_gentaus, axis=1) # [ [1, 0], [0, 1] ]                                                                        
+    # print("2")
+    # # Get the indices of the gentaus closed to the hcands                                                                                                         
+    # sorted_idx_hcand1_gentaus = ak.argsort(dr_hcand1_gentaus, axis=1) # [ [0, 1], [1, 0] ]                                                                        
+    # sorted_idx_hcand2_gentaus = ak.argsort(dr_hcand2_gentaus, axis=1) # [ [1, 0], [0, 1] ]                                                                        
 
-    print("3")
-    # Sorting the gentaus by the indices: first gentau should be the closest one to the hcand                                                                     
-    gentaus_hcand1 = gentaus[sorted_idx_hcand1_gentaus] # [ [g11, g12], [g22, g21] ]                                                                              
-    gentaus_hcand2 = gentaus[sorted_idx_hcand2_gentaus] # [ [g12, g11], [g21, g22] ]                                                                              
+    # print("3")
+    # # Sorting the gentaus by the indices: first gentau should be the closest one to the hcand                                                                     
+    # gentaus_hcand1 = gentaus[sorted_idx_hcand1_gentaus] # [ [g11, g12], [g22, g21] ]                                                                              
+    # gentaus_hcand2 = gentaus[sorted_idx_hcand2_gentaus] # [ [g12, g11], [g21, g22] ]                                                                              
 
-    print("4")
-    # Get the dr mask                                                                                                                                             
-    mask_dr_hcand1_gentaus = dr_hcand1_gentaus < 0.4    #  [ [T,F], [F,T] ]                                                                                       
-    mask_dr_hcand2_gentaus = dr_hcand2_gentaus < 0.4    #  [ [F,T], [T,F] ]                                                                                       
+    # print("4")
+    # # Get the dr mask                                                                                                                                             
+    # mask_dr_hcand1_gentaus = dr_hcand1_gentaus < 0.4    #  [ [T,F], [F,T] ]                                                                                       
+    # mask_dr_hcand2_gentaus = dr_hcand2_gentaus < 0.4    #  [ [F,T], [T,F] ]                                                                                       
 
-    print("5")
-    # Sort the position of the mask as wellaccording to the sorted indices                                                                                        
-    mask_dr_hcand1_gentaus = mask_dr_hcand1_gentaus[sorted_idx_hcand1_gentaus] # [ [T,F], [T,F] ]                                                                 
-    mask_dr_hcand2_gentaus = mask_dr_hcand2_gentaus[sorted_idx_hcand2_gentaus] # [ [T,F], [T,F] ]                                                                 
+    # print("5")
+    # # Sort the position of the mask as wellaccording to the sorted indices                                                                                        
+    # mask_dr_hcand1_gentaus = mask_dr_hcand1_gentaus[sorted_idx_hcand1_gentaus] # [ [T,F], [T,F] ]                                                                 
+    # mask_dr_hcand2_gentaus = mask_dr_hcand2_gentaus[sorted_idx_hcand2_gentaus] # [ [T,F], [T,F] ]                                                                 
 
-    print("6")
-    # Apply these sorted masks on the sorted gentaus                                                                                                              
-    # Take the 1st one as it is the closest one                                                                                                                   
-    gentaus_hcand1 = gentaus_hcand1[mask_dr_hcand1_gentaus]  # [ [g11], [g22] ]                                                                                    
-    gentaus_hcand2 = gentaus_hcand2[mask_dr_hcand2_gentaus]  # [ [g12], [g21] ]                                                                                    
+    # print("6")
+    # # Apply these sorted masks on the sorted gentaus                                                                                                              
+    # # Take the 1st one as it is the closest one                                                                                                                   
+    # gentaus_hcand1 = gentaus_hcand1[mask_dr_hcand1_gentaus]  # [ [g11], [g22] ]                                                                                    
+    # gentaus_hcand2 = gentaus_hcand2[mask_dr_hcand2_gentaus]  # [ [g12], [g21] ]                                                                                    
 
-    print("7")
-    # Take the 1st or closest one
-    gentau_hcand1 = gentaus_hcand1[: , 0:1]  # [ [g11], [g22] ] 
-    gentau_hcand2 = gentaus_hcand2[: , 0:1]  # [ [g12], [g21] ] 
+    # print("7")
+    # # Take the 1st or closest one
+    # gentau_hcand1 = gentaus_hcand1[: , 0:1]  # [ [g11], [g22] ] 
+    # gentau_hcand2 = gentaus_hcand2[: , 0:1]  # [ [g12], [g21] ] 
 
-    print("gentau_hcand1 = ", ak.to_list(gentau_hcand1))
+    # # print("gentau_hcand1 = ", ak.to_list(gentau_hcand1))
     
-    print("8")
-    # To ensure that there are matched gentaus to the hcands                                                                                                      
-    hasonegentau_hcand1 = ak.num(gentau_hcand1.pt, axis=1) == 1  # [ True, True]
-    hasonegentau_hcand2 = ak.num(gentau_hcand2.pt, axis=1) == 1  # [ True, True]  
+    # print("8")
+    # # To ensure that there are matched gentaus to the hcands                                                                                                      
+    # hasonegentau_hcand1 = ak.num(gentau_hcand1.pt, axis=1) == 1  # [ True, True]
+    # hasonegentau_hcand2 = ak.num(gentau_hcand2.pt, axis=1) == 1  # [ True, True]  
 
-    print("9")
-    # Genmatching mask
-    isgenmatched = hasonegentau_hcand1 & hasonegentau_hcand2  # [ True, True ]
+    # print("9")
+    # # Genmatching mask
+    # isgenmatched = hasonegentau_hcand1 & hasonegentau_hcand2  # [ True, True ]
 
-    print("gentau_hcand1 fields = ", gentau_hcand1.fields)
-    print("gentau_hcand2 fields = ", gentau_hcand2.fields)
+    # print("gentau_hcand1 fields = ", gentau_hcand1.fields)
+    # print("gentau_hcand2 fields = ", gentau_hcand2.fields)
 
-    from IPython import embed; embed()
 
-    # Add gentau_hcand fields as new fields of hcand
-    events.hcand[:,0:1] = ak.with_field(events.hcand[:,0:1], gentau_hcand1, "gentau_hcand1")
-    events.hcand[:,1:2] = ak.with_field(events.hcand[:,1:2], gentau_hcand2, "gentau_hcand2")
-    
-
-    print("hcand fields = ", events.hcand.fields)
 
     # genleps1_id = ak.argsort(leps1.metric_table(GenPart_Lzt), axis = 1) # 0.5 is the deltaR cut
     # genleps2_id = ak.argsort(leps2.metric_table(GenPart_Lzt), axis = 1) # 0.5 is the deltaR cut
 
     # genleph1 = GenPart_Lzt[genleps1_id[:,:,0]]
 
+    # hcand_results = SelectionResult(
+    #     steps={
+    #         "higgs_cand": ak.num(events.hcand, axis=1) == 2,
+    #         # "gen_mask": ak.sum(gen_mask, axis=1) == 2, # gen match need to match both leptons
+    #         # "gen_mask": isgenmatch,
+    #     },
+    # )
+
 
     hcand_results = SelectionResult(
         steps={
             "higgs_cand": ak.num(events.hcand, axis=1) == 2,
-            "gen_mask": ak.sum(gen_mask, axis=1) == 2, # gen match need to match both leptons
         },
     )
     results += hcand_results
     event_sel_json_and_met_filter_and_dlresveto_and_trigger_and_lepton_and_hcand = reduce(and_, results.steps.values())
 
+    # # Add genmatch fields as new fields of hcand
+
     # from IPython import embed; embed()
 
-    breakhere 
+    # dummy_hcand = convert_to_hcand_type(events.hcand, events.hcand)[:, :0]
+
+    # events.hcand = ak.where(isgenmatched, convert_to_hcand_type(events.hcand, ak.concatenate([gentau_hcand1, gentau_hcand2], axis=1)),hcand_dummy)
+   
+
+    # # Add gentau_hcand fields as new fields of hcand
+    # events.hcand[:,0:1] = ak.with_field(events.hcand[:,0:1], gentau_hcand1, "gentau_hcand1")
+    # events.hcand[:,1:2] = ak.with_field(events.hcand[:,1:2], gentau_hcand2, "gentau_hcand2")
+    
+
+    print("hcand fields = ", events.hcand.fields)
+
+
+    # from IPython import embed; embed()
+
     # jet selection
     events, jet_results = self[jet_selection](events, **kwargs)
     results += jet_results
@@ -244,7 +262,6 @@ def main(
     # combined event selection after all steps
     event_sel = reduce(and_, results.steps.values())
     results.event = event_sel
-
 
     # create process ids
     events = self[process_ids](events, **kwargs)
@@ -287,6 +304,7 @@ def main(
                 "mask_fn": (lambda v: events.channel_id == v),
             },
         }
+    print("d")
     events, results = self[increment_stats](
         events,
         results,
@@ -295,5 +313,25 @@ def main(
         group_map=group_map,
         **kwargs,
     )
-
+    print("e")
     return events, results
+
+
+# def convert_to_hcand_type(phobj: ak.Array, genobj: ak.Array) -> ak.Array:
+#     return ak.zip(
+#         {
+#             "pt": phobj.pt,
+#             "eta": phobj.eta,
+#             "phi": phobj.phi,
+#             "mass": phobj.mass,
+#             "charge": phobj.charge,
+#             "decayMode": phobj.decayMode,
+#             "lepton": phobj.lepton,
+#             "pt_gen" : genobj.pt,
+#             "eta_gen": genobj.eta,
+#             "phi_gen": genobj.phi,
+#             "mass_gen": genobj.mass,
+#         },
+#         with_name = "PtEtaPhiMLorentzVector",
+#         behavior = coffea.nanoevents.methods.vector.behavior,
+#     )

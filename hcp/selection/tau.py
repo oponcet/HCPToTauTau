@@ -189,7 +189,7 @@ def gentau_selection(
 
 
     GenPart = events.GenPart
-        # masks to select gen tau+ and tau-
+    # masks to select gen tau+ and tau-
     isgentau = ((np.abs(GenPart.pdgId) == 15) #  & (GenPart.hasFlags(["isPrompt","isFirstCopy"]))
                 & (GenPart.status == 2)
                 & (GenPart.pt >= 10)
