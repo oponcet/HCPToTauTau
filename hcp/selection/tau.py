@@ -189,6 +189,7 @@ def gentau_selection(
 
 
     GenPart = events.GenPart
+
     # masks to select gen tau+ and tau-
     isgentau = ((np.abs(GenPart.pdgId) == 15) #  & (GenPart.hasFlags(["isPrompt","isFirstCopy"]))
                 & (GenPart.status == 2)
@@ -203,18 +204,25 @@ def gentau_selection(
     is_gentau_from_h = (GenPart[gentau_momidx].pdgId == 25) & (GenPart[gentau_momidx].status == 22)
     gentau_momidx    = gentau_momidx[is_gentau_from_h]
 
+
+    has2tau = ((ak.num(gentau.pdgId, axis=1) == 2)
+                & (ak.num(gentau_momidx, axis=1) == 2))
+
+
+    gentau[has2tau]
     # # get tau products
     # gentau_children = gentau.distinctChildren
     
     #embed()
     #1/0
-    SelectionResult = {
-        "steps": {
-            "gentau_selection: has 2 gentau": (ak.num(gentau.pdgId, axis=1) == 2),
-            "gentau_selection: tau+ and tau-": (ak.sum(gentau.pdgId, axis=1) == 0),
-            "gentau_selection: two moms are h": (ak.num(gentau_momidx, axis=1) == 2),
-        },
-    }
+    # SelectionResult = {
+    #     "steps": {
+    #         "gentau_selection: has 2 gentau": (ak.num(gentau.pdgId, axis=1) == 2),
+    #         "gentau_selection: tau+ and tau-": (ak.sum(gentau.pdgId, axis=1) == 0),
+    #         "gentau_selection: two moms are h": (ak.num(gentau_momidx, axis=1) == 2),
+    #     },
+    # }
+    # from IPython import embed; embed()
 
-    return gentau, SelectionResult
+    return gentau
 

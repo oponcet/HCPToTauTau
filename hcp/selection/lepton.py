@@ -106,7 +106,7 @@ def lepton_selection(
         print("tau idx done")
 
         # gentau selection 
-        gentaus, _ = self[gentau_selection](
+        gentaus = self[gentau_selection](
             events, 
             **kwargs,
         )
@@ -244,9 +244,9 @@ def lepton_selection(
     return events, SelectionResult(
         steps={
             "lepton": channel_id != 0,
-            "gentau_selection: has 2 gentau": (ak.num(gentaus.pdgId, axis=1) == 2),
-            "gentau_selection: tau+ and tau-": (ak.sum(gentaus.pdgId, axis=1) == 0),
-            "gentau_selection: two moms are h": (ak.num(gentaus.distinctParent.genPartIdxMother, axis=1) == 2),
+            # "gentau_selection: has 2 gentau": (ak.num(gentaus.pdgId, axis=1) == 2),
+            # "gentau_selection: tau+ and tau-": (ak.sum(gentaus.pdgId, axis=1) == 0),
+            # "gentau_selection: two moms are h": (ak.num(gentaus.distinctParent.genPartIdxMother, axis=1) == 2),
         },
         objects={
             # "GenPart": {

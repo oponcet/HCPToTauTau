@@ -376,7 +376,7 @@ def buildhcand(self: Producer,
             print(f"""h_cand after genmatching: {h_cand.fields}""")
             
 
-            # from IPython import embed; embed()
+            from IPython import embed; embed()
 
 
             # Create a decay mode array for the first lepton

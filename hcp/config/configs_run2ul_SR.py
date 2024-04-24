@@ -246,7 +246,7 @@ def add_config(
             "tau2_isolated", "m_ll", "dr_ll",
             "hcand.pt", "hcand.eta", "hcand.phi", "hcand.mass", "hcand_invmass", "hcand_dr", "hcand.decayMode", "hcand.lepton",
             # "leptons_os",
-            "Electron.decayMode", "Muon.decayMode",
+            "Electron.decayMode", "Muon.decayMode","hcand.*"
         },
         "cf.MergeSelectionMasks": {
             "normalization_weight", "process_id", "category_ids", "channel_id", "cutflow.*",

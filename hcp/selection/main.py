@@ -229,7 +229,7 @@ def main(
 
     hcand_results = SelectionResult(
         steps={
-            "higgs_cand": ak.num(events.hcand, axis=1) == 2,
+            "higgs_cand": ak.fill_none(ak.num(events.hcand, axis=1) == 2, False),
         },
     )
     results += hcand_results
@@ -250,6 +250,8 @@ def main(
     
 
     print("hcand fields = ", events.hcand.fields)
+
+    from IPython import embed; embed()
 
 
     # from IPython import embed; embed()
@@ -304,7 +306,6 @@ def main(
                 "mask_fn": (lambda v: events.channel_id == v),
             },
         }
-    print("d")
     events, results = self[increment_stats](
         events,
         results,
@@ -313,7 +314,6 @@ def main(
         group_map=group_map,
         **kwargs,
     )
-    print("e")
     return events, results
 
 
