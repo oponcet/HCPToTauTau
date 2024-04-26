@@ -110,7 +110,9 @@ def lepton_selection(
             events, 
             **kwargs,
         )
-        print("gentau = ", gentaus)
+        # print("gentau = ", ak.to_list(gentaus))
+
+
 
         # lepton pair selecton per trigger via lepton counting
         if trigger.has_tag({"single_e", "cross_e_tau"}):            

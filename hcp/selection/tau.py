@@ -190,31 +190,38 @@ def gentau_selection(
 
     GenPart = events.GenPart
 
+    gentau_momidx    = GenPart.distinctParent.genPartIdxMother
     # masks to select gen tau+ and tau-
     isgentau = ((np.abs(GenPart.pdgId) == 15) #  & (GenPart.hasFlags(["isPrompt","isFirstCopy"]))
-                & (GenPart.status == 2)
-                & (GenPart.pt >= 10)
-                & (np.abs(GenPart.eta) <= 2.3))
+                & (GenPart.status == 2) # tau is going to decay = not final states 
+                & (GenPart.pt >= 10) 
+                & (np.abs(GenPart.eta) <= 2.3) 
+                & (GenPart[gentau_momidx].pdgId == 23) # comes from Z boson 
+                & (GenPart.hasFlags(["isPrompt","isFirstCopy"]))) 
+
+    isgentau = ak.fill_none(isgentau, False)
     
     # get gen tau+ and tau- objects from events GenParts
     gentau = GenPart[isgentau]
 
-    # get tau mother indices
-    gentau_momidx    = gentau.distinctParent.genPartIdxMother
-    is_gentau_from_h = (GenPart[gentau_momidx].pdgId == 25) & (GenPart[gentau_momidx].status == 22)
-    gentau_momidx    = gentau_momidx[is_gentau_from_h]
+
+    # # Count the number of tau particles in each event
+    # num_gentau_per_event = ak.num(gentau.pt, axis=1)
+
+    # # Select events with exactly two tau particles
+    # is_two_gentau_events = num_gentau_per_event == 2
 
 
-    has2tau = ((ak.num(gentau.pdgId, axis=1) == 2)
-                & (ak.num(gentau_momidx, axis=1) == 2))
+    # gentau = gentau[is_two_gentau_events]
 
 
-    gentau[has2tau]
-    # # get tau products
-    # gentau_children = gentau.distinctChildren
-    
-    #embed()
-    #1/0
+    # from IPython import embed; embed()
+
+    # gentau_momidx    = gentau.distinctParent.genPartIdxMother
+    # is_gentau_from_h = (GenPart[gentau_momidx].pdgId == 25) & (GenPart[gentau_momidx].status == 22)
+    # gentau_momidx    = gentau_momidx[is_gentau_from_h]
+
+
     # SelectionResult = {
     #     "steps": {
     #         "gentau_selection: has 2 gentau": (ak.num(gentau.pdgId, axis=1) == 2),
@@ -222,7 +229,6 @@ def gentau_selection(
     #         "gentau_selection: two moms are h": (ak.num(gentau_momidx, axis=1) == 2),
     #     },
     # }
-    # from IPython import embed; embed()
+    # # # from IPython import embed; embed()
 
     return gentau
-

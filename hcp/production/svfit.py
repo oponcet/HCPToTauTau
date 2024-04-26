@@ -169,6 +169,8 @@ def svfit(self: Producer,
     print_if_verbose(verb,"leps1 genphi = ", leps1_genphi )
     print_if_verbose(verb,"leps1 genmass = ", leps1_genmass )
 
+
+
     
 
     # Make the plot
@@ -201,23 +203,25 @@ def svfit(self: Producer,
     print_if_verbose(verb,"leps2 genphi = ", leps2_genphi )
     print_if_verbose(verb,"leps2 genmass = ", leps2_genmass )
 
+    
+
 
     # # # Create a TH1D histogram for metx
     # hist1 = root.TH1D("hist_mass_leps1", "mass", 50, 0, 5)
     # hist2 = root.TH1D("hist_mass_leps2", "mass", 50, 0, 5)
 
     # # Fill the histogram with metx values
-    # for mass, genmass in leps1_mass:
-    #     hist1.Fill(mass-genmass)
+    # for mass in leps1_mass:
+    #     hist1.Fill(mass)
 
-    # for mass in leps2_mass:
+    # for mass in leps1_genmass:
     #     hist2.Fill(mass)
 
     # # Draw the histogram
     # hist1.Draw()
 
     # # Save the histogram in a root file
-    # root_file = root.TFile("hist_mass1.root", "RECREATE")
+    # root_file = root.TFile("hist_mass_leps1.root", "RECREATE")
     # hist1.Write()
     # root_file.Close()
     
@@ -225,11 +229,11 @@ def svfit(self: Producer,
     # hist2.Draw()
 
     # # Save the histogram in a root file
-    # root_file = root.TFile("hist_mass2.root", "RECREATE")
+    # root_file = root.TFile("hist_genmass_leps1.root", "RECREATE")
     # hist2.Write()
     # root_file.Close()
 
-    # breakhere
+    breakhere
     # Define the MeasuredTauLepton objects for the SVFit algorithm
     leps1_MeasuredTauLepton = np.array([MeasuredTauLepton(*args) for args in zip(decayType, leps1_pt, leps1_eta, leps1_phi ,leps1_mass, leps1_dm)])
     leps2_MeasuredTauLepton = np.array([MeasuredTauLepton(1,*args) for args in zip(leps2_pt, leps2_eta, leps2_phi ,leps2_mass, leps2_dm)])
@@ -303,7 +307,7 @@ def svfit(self: Producer,
     # plt.savefig("mass_SVFit.pdf") 
 
     # # Create a TH1D histogram for metx
-    hist1 = root.TH1D("mass_SVFit", "mass", 200, 0, 200)
+    hist1 = root.TH1D("mass_SVFit_massconstain_dy", "mass", 200, 0, 200)
 
     # Fill the histogram with metx values
     for mass in mass_array:
@@ -318,22 +322,22 @@ def svfit(self: Producer,
     root_file.Close()
 
 
-    # # Create a TH1D histogram for metx
-    histgen = root.TH1D("mass_gen", "mass", 200, 0, 200)
+    # # # Create a TH1D histogram for metx
+    # histgen = root.TH1D("mass_gen", "mass", 200, 0, 200)
 
-    ditaumass_gen = leps1_genmass + leps2_genmass
+    # ditaumass_gen = leps1_genmass + leps2_genmass
 
-    # Fill the histogram with metx values
-    for massgen in ditaumass_gen:
-        histgen.Fill(massgen)
+    # # Fill the histogram with metx values
+    # for massgen in ditaumass_gen:
+    #     histgen.Fill(massgen)
 
-    # Draw the histogram
-    histgen.Draw()
+    # # Draw the histogram
+    # histgen.Draw()
 
-    # Save the histogram in a root file
-    root_file = root.TFile("mass_gen.root", "RECREATE")
-    histgen.Write()
-    root_file.Close()
+    # # Save the histogram in a root file
+    # root_file = root.TFile("mass_gen.root", "RECREATE")
+    # histgen.Write()
+    # root_file.Close()
 
     breakhere
     # print(f"h_cand : {breakhere}")

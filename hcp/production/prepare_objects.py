@@ -47,8 +47,6 @@ def select_pairs(dtrpairs: ak.Array,
     # Unzip the dtrpairs array into two separate arrays        
     lep1unzip, lep2unzip = ak.unzip(dtrpairs)
 
-    # print(f"""dtrpairs["0"] fields: {dtrpairs["0"].fields}""")
-    # print(f"""dtrpairs["1"] fields: {dtrpairs["1"].fields}""")
 
     # Create masks to filter pairs of objects
     charge_mask = (lep1unzip.charge + lep2unzip.charge) == 0 # opposite charge
@@ -240,19 +238,7 @@ def buildhcand(self: Producer,
                selres: SelectionResult,
                **kwargs) -> ak.Array:
 
-    print("Started building h-cand")
-    #empty_indices = ak.zeros_like(1*events.channel_id, dtype=np.uint16)[..., None][..., :0]
-    #empty_indices = ak.zeros_like(1*events.Electron)
-
-    #print("sandbox = ",sandbox)
-
-
-    #pybind = maybe_import("pybind11")
-    #from IPython import embed; embed()
-    # ROOT = maybe_import("root")
-
-    # print(ROOT)
-    #print(pybind)
+    print("\033[96m" + ">>>> Started building h-cand" + "\033[0m")
 
     # Extract the particles (Electrons, Muons, Taus) from the selection result
     Electrons = selres.x.Electrons
@@ -272,7 +258,7 @@ def buildhcand(self: Producer,
     # Concatenate Electrons, Muons, and Taus
     # particles = ak.concatenate([Electrons, Muons, Taus], axis=1)
     # concatenate = ak.concatenate(Electrons, Muon, Taus, axis=1)
-    h_cand = ak.full_like(ak.concatenate([Electrons, Muons, Taus], axis=1), 0)
+    h_cand = ak.full_like(ak.concatenate([Electrons, Muons, Taus], axis=1), 0)[:,:0]
     print(f"h_cand | concatenate: {h_cand.fields}")
 
     # Create a decay mode array for the first lepton
@@ -309,6 +295,10 @@ def buildhcand(self: Producer,
     for ch_idx, ch in enumerate(channels):
         print(f"Idx: {ch_idx} || Channel: {ch} || {self.config_inst.get_channel(ch)}")
 
+
+
+        ###########################################################
+        ########################## ETAU ##########################
         if (ch == "etau"):
             print(f"channel: {ch}")
             assert (ch == self.config_inst.get_channel(ch).name), "Should be etau channel"
@@ -328,9 +318,31 @@ def buildhcand(self: Producer,
             leps1 = Electrons
             leps2 = Taus
 
-            # Add gen tau field to leptons 1 
+            # from IPython import embed; embed()
+
+            # Create a decay mode array for the first lepton
+            leps1_decay_mode = ak.full_like(leps1.pt, -1)
+
+            # add decay mode array set to -1 for first lepton (electron)
+            leps1 = ak.with_field(leps1, leps1_decay_mode, "decayMode")
+
+            # Define the list of fields to keep
+            # fields_to_keep = ['dz', 'eta', 'mass', 'phi', 'pt', 'charge', 'decayMode']
+
+            leps1_flavour = ak.full_like(leps1.pt, 11)  # pid electron = 11
+            leps2_flavour = ak.full_like(leps2.pt, 15) # pid tau = 15
+
+            leps1 = ak.with_field(leps1, leps1_flavour, "lepton")
+            leps2 = ak.with_field(leps2, leps2_flavour, "lepton")
+
+            ######## GENTAU ############################ 
+            # This code segment aims to associate reconstructed tau leptons (leps1) with their closest 
+            # counterparts from simulated or generated tau leptons (GenTaus) based on their spatial proximity, 
+            # and it adds a new field "genpt" to leps1 containing the transverse momentum of the closest generated tau lepton.
+
+            # # Add gen tau field to leptons 1 
+            
             dr_hcand1_gentaus = leps1.metric_table(GenTaus) # dr between taus and gen taus
-            # dr_hcand2_gentaus_sorted = ak.first(ak.sort(dr_hcand2_gentaus)) # sort by dr 
 
             # Find the indices of the minimum distance for each leps2
             min_indices_leps1  = ak.argmin(dr_hcand1_gentaus, axis=2)
@@ -344,7 +356,7 @@ def buildhcand(self: Producer,
             leps1 = ak.with_field(leps1, ak.where(gen_mask_leps1, GenTaus[min_indices_leps1].pt, -99), "genpt")
             leps1 = ak.with_field(leps1, ak.where(gen_mask_leps1, GenTaus[min_indices_leps1].eta, -99), "geneta")
             leps1 = ak.with_field(leps1, ak.where(gen_mask_leps1, GenTaus[min_indices_leps1].phi, -99), "genphi")
-            leps1 = ak.with_field(leps1, ak.where(gen_mask_leps1, GenTaus[min_indices_leps1].mass, -99), "genmass")
+            leps1 = ak.with_field(leps1, ak.where(gen_mask_leps1, 1.777, -99), "genmass")
 
             # Add gen tau field to leptons 1 and 2 
             dr_hcand2_gentaus = leps2.metric_table(GenTaus) # dr between taus and gen taus
@@ -362,44 +374,55 @@ def buildhcand(self: Producer,
             leps2 = ak.with_field(leps2, ak.where(gen_mask_leps2, GenTaus[min_indices_leps2].pt, -99), "genpt")
             leps2 = ak.with_field(leps2, ak.where(gen_mask_leps2, GenTaus[min_indices_leps2].eta, -99), "geneta")
             leps2 = ak.with_field(leps2, ak.where(gen_mask_leps2, GenTaus[min_indices_leps2].phi, -99), "genphi")
-            leps2 = ak.with_field(leps2, ak.where(gen_mask_leps2, GenTaus[min_indices_leps2].mass, -99), "genmass")
+            leps2 = ak.with_field(leps2, ak.where(gen_mask_leps2, 1.777, -99), "genmass")
 
-            hasonegentau_hcand1 = ak.num(leps1.genpt, axis=1) == 1  # [ True, True]
-            hasonegentau_hcand2 = ak.num(leps2.genpt, axis=1) == 1  # [ True, True]  
 
+            # # Ensure that each event has exactly one reconstructed tau lepton. 
+            # hasonegentau_hcand1 = ak.num(leps1.genpt[leps1.genpt != None]) == 1 
+            # hasonegentau_hcand2 = ak.num(leps1.genpt[leps2.genpt != None]) == 1 # [ True, True]  
+            
+            # # Create a mask to keep only the leps1 and leps2 that match with a gentau
+            # is_matched_leps1 = ak.any(gen_mask_leps1, axis=1)
+            # is_matched_leps2 = ak.any(gen_mask_leps2, axis=1)
+
+            # # Apply the mask to leps1 and leps2
+            # matched_leps1 = leps1[is_matched_leps1]
+            # matched_leps2 = leps2[is_matched_leps2]
+
+            # Create a mask to keep only the leps1 and leps2 that match with a gentau
+            is_matched_leps1 = ak.any(gen_mask_leps1, axis=1)
+            is_matched_leps2 = ak.any(gen_mask_leps2, axis=1)
+
+            # Apply the mask to leps1 and leps2
+            matched_leps1 = ak.mask(leps1, is_matched_leps1)
+            matched_leps2 = ak.mask(leps2, is_matched_leps2)
+
+            # # Replace None values with empty arrays
+            # matched_leps1 = ak.where(is_matched_leps1, matched_leps1, ak.Array([[]]))
+            # matched_leps2 = ak.where(is_matched_leps2, matched_leps2, ak.Array([[]]))
+
+
+            # from IPython import embed; embed()  
 
             # Genmatching mask
-            isgenmatched = hasonegentau_hcand1 & hasonegentau_hcand2 
+            # isgenmatched = hasonegentau_hcand1 & hasonegentau_hcand2 
 
-            h_cand = ak.mask(h_cand, isgenmatched)
+            # # h_cand_m = ak.mask(h_cand, isgenmatched)
 
-            print(f"""h_cand after genmatching: {h_cand.fields}""")
-            
-
-            from IPython import embed; embed()
-
-
-            # Create a decay mode array for the first lepton
-            leps1_decay_mode = ak.full_like(leps1.pt, -1)
-
-            # add decay mode array set to -1 for first lepton (electron)
-            leps1 = ak.with_field(leps1, leps1_decay_mode, "decayMode")
-
-            # Define the list of fields to keep
-            # fields_to_keep = ['dz', 'eta', 'mass', 'phi', 'pt', 'charge', 'decayMode']
-
-           
-
-            leps1_flavour = ak.full_like(leps1.pt, 11)  # pid electron = 11
-            leps2_flavour = ak.full_like(leps2.pt, 15) # pid tau = 15
-
-            leps1 = ak.with_field(leps1, leps1_flavour, "lepton")
-            leps2 = ak.with_field(leps2, leps2_flavour, "lepton")
-
-            
+            # print(f"""h_cand after genmatching: {h_cand.fields}""")
+            # h_cand = ak.where(isgenmatched, ak.concatenate([leps1,leps2], axis=1), h_cand)
 
             # Create pairs of leptons
-            dtrpairs = ak.cartesian([leps1, leps2], axis=1)
+            dtrpairs = ak.cartesian([matched_leps1, matched_leps2], axis=1)
+
+            # from IPython import embed; embed()
+
+
+            # Apply gentau matching to dtrpairs
+
+            # dtrpairs = dtrpairs[isgenmatched]
+
+            # dtrpairs = ak.cartesian([leps1, leps2], axis=1)
 
 
             print(f"""dtrpairs["0"] fields 1: {dtrpairs["0"].fields}""")
@@ -408,12 +431,6 @@ def buildhcand(self: Producer,
 
             # Select pairs based on certain criteria
             dtrpairs_sel = select_pairs(dtrpairs, events.MET, 50.0)
-            # print(f"""dtrpairs["0"] fields: {dtrpairs_sel["0"].fields}""")
-            # print(f"""dtrpairs["1"] fields: {dtrpairs_sel["1"].fields}""")
-
-
-            # print(f"""dtrpairs["0"] fields 1: {dtrpairs["0"].fields}""")
-            # print(f"""dtrpairs["1"] fields 1: {dtrpairs["1"].fields}""") 
 
             dtrpair = sort_and_get_pair_semilep(dtrpairs_sel)
             #print(f"dtrpair pt: {dtrpair.pt}")
@@ -424,18 +441,54 @@ def buildhcand(self: Producer,
 
             # print(f"""h_cand before where: {h_cand.fields}""")
 
+            h_cand = ak.where(where, dtrpair, h_cand) #  ak.to_list(h_cand[3799])
 
-            h_cand = ak.where(where, dtrpair, h_cand)
 
-            # print("where: ", where)
+            # from IPython import embed; embed()
+ 
+            # hcand = h_cand *1 # ak.to_list(hcand[3799])
 
-            # print(f"""dtrpairs["0"] fields 3: {dtrpairs["0"].fields}""")
-            # print(f"""dtrpairs["1"] fields 3: {dtrpairs["1"].fields}""") 
-            # print(f"""h_cand selection step: {h_cand.fields}""")
+            # # Compute the metric table between hcand and GenTaus
+            # dr_hcand_gentaus = hcand.metric_table(GenTaus)  # ak.to_list(dr_hcand_gentaus [3799])
 
-            # print(f"""h_cand[:,:1].fields: {h_cand[:,:1].fields}""")
-            # print(f"""h_cand[:,1:2].fields: {h_cand[:,1:2].fields}""") 
-        
+            # # Find the indices of the minimum distance for each candidate in hcand
+            # min_indices_hcand = ak.argmin(dr_hcand_gentaus, axis=2)
+
+            # # Get the minimum distances
+            # min_distances_hcand = ak.min(dr_hcand_gentaus, axis=2)
+
+            # # Create a mask to check if each candidate in hcand is matched with a gentau
+            # gen_mask_hcand = min_distances_hcand < 0.5
+
+            # # Apply the mask to hcand
+            # matched_hcand = ak.mask(hcand, gen_mask_hcand)
+
+            # # leps1 = matched_hcand[:,:1] 
+            # # leps2 = matched_hcand[:,1:2]
+
+
+            # # Assign gentpt values to leps1_with_gentpt
+            # matched_hcand[:,:1] = ak.with_field(matched_hcand[:,:1], ak.where(gen_mask_hcand, GenTaus[min_indices_hcand].pt, -99), "genpt")
+            # matched_hcand[:,:1] = ak.with_field(matched_hcand[:,:1], ak.where(gen_mask_hcand, GenTaus[min_indices_hcand].eta, -99), "geneta")
+            # matched_hcand[:,:1]= ak.with_field(matched_hcand[:,:1], ak.where(gen_mask_hcand, GenTaus[min_indices_hcand].phi, -99), "genphi")
+            # matched_hcand[:,:1] = ak.with_field(matched_hcand[:,:1], ak.where(gen_mask_hcand, 1.777, -99), "genmass")
+
+            # # Assign gentpt values to leps2_with_gentpt
+            # matched_hcand[:,1:2] = ak.with_field(matched_hcand[:,1:2], ak.where(gen_mask_hcand, GenTaus[min_indices_hcand].pt, -99), "genpt")
+            # matched_hcand[:,1:2] = ak.with_field(matched_hcand[:,1:2], ak.where(gen_mask_hcand, GenTaus[min_indices_hcand].eta, -99), "geneta")
+            # matched_hcand[:,1:2] = ak.with_field(matched_hcand[:,1:2], ak.where(gen_mask_hcand, GenTaus[min_indices_hcand].phi, -99), "genphi")
+            # matched_hcand[:,1:2] = ak.with_field(matched_hcand[:,1:2], ak.where(gen_mask_hcand, 1.777, -99), "genmass")
+
+            # hcand = matched_hcand
+
+            # # from IPython import embed; embed()
+
+            
+
+            # print("h_cand after where: ", ak.to_list(h_cand))
+
+        ###########################################################
+        ########################## MUTAU ##########################
         elif (ch == "mutau"):
             print(f"channel: {ch}")
             assert (ch == self.config_inst.get_channel(ch).name), "Should be mutau channel"
@@ -448,54 +501,6 @@ def buildhcand(self: Producer,
             where = where & nlep_mask
             leps1 = Muons
             leps2 = Taus
-
-
-               # Add gen tau field to leptons 1 
-            dr_hcand1_gentaus = leps1.metric_table(GenTaus) # dr between taus and gen taus
-            # dr_hcand2_gentaus_sorted = ak.first(ak.sort(dr_hcand2_gentaus)) # sort by dr 
-
-            # Find the indices of the minimum distance for each leps2
-            min_indices_leps1  = ak.argmin(dr_hcand1_gentaus, axis=2)
-            
-            # Get the minimum distances
-            min_distances_leps1 = ak.min(dr_hcand1_gentaus, axis=2)
-
-            gen_mask_leps1 = min_distances_leps1 < 0.5
-
-            # Assign gentpt values to leps2_with_gentpt
-            leps1 = ak.with_field(leps1, ak.where(gen_mask_leps1, GenTaus[min_indices_leps1].pt, -99), "genpt")
-            leps1 = ak.with_field(leps1, ak.where(gen_mask_leps1, GenTaus[min_indices_leps1].eta, -99), "geneta")
-            leps1 = ak.with_field(leps1, ak.where(gen_mask_leps1, GenTaus[min_indices_leps1].phi, -99), "genphi")
-            leps1 = ak.with_field(leps1, ak.where(gen_mask_leps1, GenTaus[min_indices_leps1].mass, -99), "genmass")
-
-            # Add gen tau field to leptons 1 and 2 
-            dr_hcand2_gentaus = leps2.metric_table(GenTaus) # dr between taus and gen taus
-            # dr_hcand2_gentaus_sorted = ak.first(ak.sort(dr_hcand2_gentaus)) # sort by dr 
-
-            # Find the indices of the minimum distance for each leps2
-            min_indices_leps2  = ak.argmin(dr_hcand2_gentaus, axis=2)
-            
-            # Get the minimum distances
-            min_distances_leps2 = ak.min(dr_hcand2_gentaus, axis=2)
-
-            gen_mask_leps2 = min_distances_leps2 < 0.5
-
-            # Assign gentpt values to leps2_with_gentpt
-            leps2 = ak.with_field(leps2, ak.where(gen_mask_leps2, GenTaus[min_indices_leps2].pt, -99), "genpt")
-            leps2 = ak.with_field(leps2, ak.where(gen_mask_leps2, GenTaus[min_indices_leps2].eta, -99), "geneta")
-            leps2 = ak.with_field(leps2, ak.where(gen_mask_leps2, GenTaus[min_indices_leps2].phi, -99), "genphi")
-            leps2 = ak.with_field(leps2, ak.where(gen_mask_leps2, GenTaus[min_indices_leps2].mass, -99), "genmass")
-
-            hasonegentau_hcand1 = ak.num(leps1.genpt, axis=1) == 1  # [ True, True]
-            hasonegentau_hcand2 = ak.num(leps2.genpt, axis=1) == 1  # [ True, True]  
-
-
-            # Genmatching mask
-            isgenmatched = hasonegentau_hcand1 & hasonegentau_hcand2 
-
-            h_cand = ak.mask(h_cand, isgenmatched)
-
-            print(f"""h_cand after genmatching: {h_cand.fields}""")
 
             # Create a decay mode array for the first lepton
             leps1_decay_mode = ak.full_like(leps1.pt, -1)
@@ -514,6 +519,87 @@ def buildhcand(self: Producer,
             leps2  = ak.with_field(leps2, leps2_flavour, "lepton")
 
 
+            ######## GENTAU ############################ 
+            # This code segment aims to associate reconstructed tau leptons (leps1) with their closest 
+            # counterparts from simulated or generated tau leptons (GenTaus) based on their spatial proximity, 
+            # and it adds a new field "genpt" to leps1 containing the transverse momentum of the closest generated tau lepton.
+
+            # # Add gen tau field to leptons 1 
+            
+            dr_hcand1_gentaus = leps1.metric_table(GenTaus) # dr between taus and gen taus
+
+            # Find the indices of the minimum distance for each leps2
+            min_indices_leps1  = ak.argmin(dr_hcand1_gentaus, axis=2)
+            
+            # Get the minimum distances
+            min_distances_leps1 = ak.min(dr_hcand1_gentaus, axis=2)
+
+            gen_mask_leps1 = min_distances_leps1 < 0.5
+
+            # Assign gentpt values to leps2_with_gentpt
+            leps1 = ak.with_field(leps1, ak.where(gen_mask_leps1, GenTaus[min_indices_leps1].pt, -99), "genpt")
+            leps1 = ak.with_field(leps1, ak.where(gen_mask_leps1, GenTaus[min_indices_leps1].eta, -99), "geneta")
+            leps1 = ak.with_field(leps1, ak.where(gen_mask_leps1, GenTaus[min_indices_leps1].phi, -99), "genphi")
+            leps1 = ak.with_field(leps1, ak.where(gen_mask_leps1, 1.777, -99), "genmass")
+
+            # Add gen tau field to leptons 1 and 2 
+            dr_hcand2_gentaus = leps2.metric_table(GenTaus) # dr between taus and gen taus
+            # dr_hcand2_gentaus_sorted = ak.first(ak.sort(dr_hcand2_gentaus)) # sort by dr 
+
+            # Find the indices of the minimum distance for each leps2
+            min_indices_leps2  = ak.argmin(dr_hcand2_gentaus, axis=2)
+            
+            # Get the minimum distances
+            min_distances_leps2 = ak.min(dr_hcand2_gentaus, axis=2)
+
+            gen_mask_leps2 = min_distances_leps2 < 0.5
+
+            # Assign gentpt values to leps2_with_gentpt
+            leps2 = ak.with_field(leps2, ak.where(gen_mask_leps2, GenTaus[min_indices_leps2].pt, -99), "genpt")
+            leps2 = ak.with_field(leps2, ak.where(gen_mask_leps2, GenTaus[min_indices_leps2].eta, -99), "geneta")
+            leps2 = ak.with_field(leps2, ak.where(gen_mask_leps2, GenTaus[min_indices_leps2].phi, -99), "genphi")
+            leps2 = ak.with_field(leps2, ak.where(gen_mask_leps2, 1.777, -99), "genmass")
+
+
+            # # Ensure that each event has exactly one reconstructed tau lepton. 
+            # hasonegentau_hcand1 = ak.num(leps1.genpt[leps1.genpt != None]) == 1 
+            # hasonegentau_hcand2 = ak.num(leps1.genpt[leps2.genpt != None]) == 1 # [ True, True]  
+            
+            # # Create a mask to keep only the leps1 and leps2 that match with a gentau
+            # is_matched_leps1 = ak.any(gen_mask_leps1, axis=1)
+            # is_matched_leps2 = ak.any(gen_mask_leps2, axis=1)
+
+            # # Apply the mask to leps1 and leps2
+            # matched_leps1 = leps1[is_matched_leps1]
+            # matched_leps2 = leps2[is_matched_leps2]
+
+            # Create a mask to keep only the leps1 and leps2 that match with a gentau
+            is_matched_leps1 = ak.any(gen_mask_leps1, axis=1)
+            is_matched_leps2 = ak.any(gen_mask_leps2, axis=1)
+
+            # Apply the mask to leps1 and leps2
+            matched_leps1 = ak.mask(leps1, is_matched_leps1)
+            matched_leps2 = ak.mask(leps2, is_matched_leps2)
+
+            # # Replace None values with empty arrays
+            # matched_leps1 = ak.where(is_matched_leps1, matched_leps1, ak.Array([[]]))
+            # matched_leps2 = ak.where(is_matched_leps2, matched_leps2, ak.Array([[]]))
+
+
+            # from IPython import embed; embed()  
+
+            # Genmatching mask
+            # isgenmatched = hasonegentau_hcand1 & hasonegentau_hcand2 
+
+            # # h_cand_m = ak.mask(h_cand, isgenmatched)
+
+            # print(f"""h_cand after genmatching: {h_cand.fields}""")
+            # h_cand = ak.where(isgenmatched, ak.concatenate([leps1,leps2], axis=1), h_cand)
+
+            # Create pairs of leptons
+            dtrpairs = ak.cartesian([matched_leps1, matched_leps2], axis=1)
+
+
             # Define the list of fields to keep
             # fields_to_keep = ['dz', 'eta', 'mass', 'phi', 'pt', 'charge', 'decayMode']
 
@@ -525,7 +611,7 @@ def buildhcand(self: Producer,
             # print(f"""leps2_selected fields: {leps2_selected.fields}""")
 
             # dtrpairs = ak.cartesian([leps1_selected, leps2_selected], axis=1)
-            dtrpairs = ak.cartesian([leps1, leps2], axis=1)
+            # dtrpairs = ak.cartesian([leps1, leps2], axis=1)
 
             # print(f"""dtrpairs["0"] fields 1: {dtrpairs_sel["0"].fields}""")
             # print(f"""dtrpairs["1"] fields 1: {dtrpairs_sel["1"].fields}""")  
@@ -560,8 +646,68 @@ def buildhcand(self: Producer,
             # Update the h-cand array with the selected pair
             h_cand = ak.where(where, dtrpair, h_cand)
 
+
+            # ######## GENTAUUUUUU 
+    
+            # leps1 = h_cand[:,:1] * 1.0
+            # leps2 = h_cand[:,1:2] * 1.0
+
+
+            # # Add gen tau field to leptons 1 
+            # dr_hcand1_gentaus = leps1.metric_table(GenTaus) # dr between taus and gen taus
+            # # dr_hcand2_gentaus_sorted = ak.first(ak.sort(dr_hcand2_gentaus)) # sort by dr 
+
+            # # Find the indices of the minimum distance for each leps2
+            # min_indices_leps1  = ak.argmin(dr_hcand1_gentaus, axis=2)
+            
+            # # Get the minimum distances
+            # min_distances_leps1 = ak.min(dr_hcand1_gentaus, axis=2)
+
+            # gen_mask_leps1 = min_distances_leps1 < 0.5
+
+            # # Assign gentpt values to leps2_with_gentpt
+            # leps1 = ak.with_field(leps1, ak.where(gen_mask_leps1, GenTaus[min_indices_leps1].pt, -99), "genpt")
+            # leps1 = ak.with_field(leps1, ak.where(gen_mask_leps1, GenTaus[min_indices_leps1].eta, -99), "geneta")
+            # leps1 = ak.with_field(leps1, ak.where(gen_mask_leps1, GenTaus[min_indices_leps1].phi, -99), "genphi")
+            # leps1 = ak.with_field(leps1, ak.where(gen_mask_leps1, GenTaus[min_indices_leps1].mass, -99), "genmass")
+
+            # # Add gen tau field to leptons 1 and 2 
+            # dr_hcand2_gentaus = leps2.metric_table(GenTaus) # dr between taus and gen taus
+            # # dr_hcand2_gentaus_sorted = ak.first(ak.sort(dr_hcand2_gentaus)) # sort by dr 
+
+            # # Find the indices of the minimum distance for each leps2
+            # min_indices_leps2  = ak.argmin(dr_hcand2_gentaus, axis=2)
+            
+            # # Get the minimum distances
+            # min_distances_leps2 = ak.min(dr_hcand2_gentaus, axis=2)
+
+            # gen_mask_leps2 = min_distances_leps2 < 0.5
+
+            # # Assign gentpt values to leps2_with_gentpt
+            # leps2 = ak.with_field(leps2, ak.where(gen_mask_leps2, GenTaus[min_indices_leps2].pt, -99), "genpt")
+            # leps2 = ak.with_field(leps2, ak.where(gen_mask_leps2, GenTaus[min_indices_leps2].eta, -99), "geneta")
+            # leps2 = ak.with_field(leps2, ak.where(gen_mask_leps2, GenTaus[min_indices_leps2].phi, -99), "genphi")
+            # leps2 = ak.with_field(leps2, ak.where(gen_mask_leps2, GenTaus[min_indices_leps2].mass, -99), "genmass")
+
+            # hasonegentau_hcand1 = ak.num(leps1.genpt[leps1.genpt != None]) == 1 
+            # hasonegentau_hcand2 = ak.num(leps1.genpt[leps2.genpt != None]) == 1 
+
+
+            # # Genmatching mask
+            # isgenmatched = hasonegentau_hcand1 & hasonegentau_hcand2 
+
+            # # h_cand = ak.mask(h_cand, isgenmatched)
+
+            # print(f"""h_cand after genmatching: {h_cand.fields}""")
+
+            # h_cand = ak.where(isgenmatched, ak.concatenate([leps1,leps2], axis=1), h_cand)
+
+
             print(f"""h_cand selection step: {h_cand.fields}""")
-               
+
+        
+        ###########################################################
+        ########################## TAUTAU ##########################       
         elif (ch == "tautau"):
             print(f"channel: {ch}")
             assert (ch == self.config_inst.get_channel(ch).name), "Should be tautau channel"
@@ -576,12 +722,21 @@ def buildhcand(self: Producer,
             print(f"""Taus fields: {Taus.fields}""")
             print(f"""Met fields: {events.MET.fields}""")
 
-               # Add gen tau field to leptons 1 
+            leps_flavour = ak.full_like(leps.pt, 15)  # pid tau = 15
+
+            leps = ak.with_field(leps, leps_flavour, "lepton")
+
+            ######## GENTAU ############################ 
+            # This code segment aims to associate reconstructed tau leptons (leps1) with their closest 
+            # counterparts from simulated or generated tau leptons (GenTaus) based on their spatial proximity, 
+            # and it adds a new field "genpt" to leps1 containing the transverse momentum of the closest generated tau lepton.
+
+            # # Add gen tau field to leptons  
+            
             dr_hcand_gentaus = leps.metric_table(GenTaus) # dr between taus and gen taus
-            # dr_hcand2_gentaus_sorted = ak.first(ak.sort(dr_hcand2_gentaus)) # sort by dr 
 
             # Find the indices of the minimum distance for each leps2
-            min_indices_leps  = ak.argmin(dr_hcand_gentaus, axis=2)
+            min_indices_leps = ak.argmin(dr_hcand_gentaus, axis=2)
             
             # Get the minimum distances
             min_distances_leps = ak.min(dr_hcand_gentaus, axis=2)
@@ -592,25 +747,30 @@ def buildhcand(self: Producer,
             leps = ak.with_field(leps, ak.where(gen_mask_leps, GenTaus[min_indices_leps].pt, -99), "genpt")
             leps = ak.with_field(leps, ak.where(gen_mask_leps, GenTaus[min_indices_leps].eta, -99), "geneta")
             leps = ak.with_field(leps, ak.where(gen_mask_leps, GenTaus[min_indices_leps].phi, -99), "genphi")
-            leps = ak.with_field(leps, ak.where(gen_mask_leps, GenTaus[min_indices_leps].mass, -99), "genmass")
+            leps = ak.with_field(leps, ak.where(gen_mask_leps, 1.777, -99), "genmass")
 
-            hasonegentau_hcand = ak.num(leps.genpt, axis=1) == 1  # [ True, True]
+            
+            # # Create a mask to keep only the leps1 and leps2 that match with a gentau
+            # is_matched_leps = ak.any(gen_mask_leps, axis=1)
+
+            # # Apply the mask to leps1 and leps2
+            # matched_leps = leps[is_matched_leps]
+
+            # Create a mask to keep only the leps1 and leps2 that match with a gentau
+            is_matched_leps = ak.any(gen_mask_leps, axis=1)
+
+            # Apply the mask to leps1 and leps2
+            matched_leps = ak.mask(leps, is_matched_leps)
+
+            # Replace None values with empty arrays
+            # smatched_leps = ak.where(is_matched_leps, matched_leps, ak.Array([[]]))
 
 
-            # Genmatching mask
-            isgenmatched = hasonegentau_hcand
-
-            h_cand = ak.mask(h_cand, isgenmatched)
-
-            print(f"""h_cand after genmatching: {h_cand.fields}""")
+            # Create pairs of leptons
+            dtrpairs = ak.combinations(matched_leps, 2, axis=-1)
 
 
-            leps_flavour = ak.full_like(leps.pt, 15)  # pid tau = 15
-
-            leps = ak.with_field(leps, leps_flavour, "lepton")
-
-
-            dtrpairs = ak.combinations(leps, 2, axis=-1)
+            # dtrpairs = ak.combinations(leps, 2, axis=-1)
             dtrpairs_sel = select_pairs(dtrpairs)
             # print(f"""dtrpairs["0"] fields: {dtrpairs_sel["0"].fields}""")
             # print(f"""dtrpairs["1"] fields: {dtrpairs_sel["1"].fields}""")
@@ -624,10 +784,56 @@ def buildhcand(self: Producer,
             # # SVFit part
             # "MET.pt", "MET.phi",
             
-            leps1 = dtrpairs["0"] 
-            leps2 = dtrpairs["1"]
+            # leps1 = h_cand[:,:1] * 1.0
+            # leps2 = h_cand[:,1:2] * 1.0
+
+            # # Add gen tau field to leptons 1 
+            # dr_hcand1_gentaus = leps1.metric_table(GenTaus) # dr between taus and gen taus
+            # # dr_hcand2_gentaus_sorted = ak.first(ak.sort(dr_hcand2_gentaus)) # sort by dr 
+
+            # # Find the indices of the minimum distance for each leps2
+            # min_indices_leps1  = ak.argmin(dr_hcand1_gentaus, axis=2)
+            
+            # # Get the minimum distances
+            # min_distances_leps1 = ak.min(dr_hcand1_gentaus, axis=2)
+
+            # gen_mask_leps1 = min_distances_leps1 < 0.5
+
+            # # Assign gentpt values to leps2_with_gentpt
+            # leps1 = ak.with_field(leps1, ak.where(gen_mask_leps1, GenTaus[min_indices_leps1].pt, -99), "genpt")
+            # leps1 = ak.with_field(leps1, ak.where(gen_mask_leps1, GenTaus[min_indices_leps1].eta, -99), "geneta")
+            # leps1 = ak.with_field(leps1, ak.where(gen_mask_leps1, GenTaus[min_indices_leps1].phi, -99), "genphi")
+            # leps1 = ak.with_field(leps1, ak.where(gen_mask_leps1, GenTaus[min_indices_leps1].mass, -99), "genmass")
+
+            # # Add gen tau field to leptons 1 and 2 
+            # dr_hcand2_gentaus = leps2.metric_table(GenTaus) # dr between taus and gen taus
+            # # dr_hcand2_gentaus_sorted = ak.first(ak.sort(dr_hcand2_gentaus)) # sort by dr 
+
+            # # Find the indices of the minimum distance for each leps2
+            # min_indices_leps2  = ak.argmin(dr_hcand2_gentaus, axis=2)
+            
+            # # Get the minimum distances
+            # min_distances_leps2 = ak.min(dr_hcand2_gentaus, axis=2)
+
+            # gen_mask_leps2 = min_distances_leps2 < 0.5
+
+            # # Assign gentpt values to leps2_with_gentpt
+            # leps2 = ak.with_field(leps2, ak.where(gen_mask_leps2, GenTaus[min_indices_leps2].pt, -99), "genpt")
+            # leps2 = ak.with_field(leps2, ak.where(gen_mask_leps2, GenTaus[min_indices_leps2].eta, -99), "geneta")
+            # leps2 = ak.with_field(leps2, ak.where(gen_mask_leps2, GenTaus[min_indices_leps2].phi, -99), "genphi")
+            # leps2 = ak.with_field(leps2, ak.where(gen_mask_leps2, GenTaus[min_indices_leps2].mass, -99), "genmass")
+
+            # hasonegentau_hcand1 = ak.num(leps1.genpt[leps1.genpt != None]) == 1 
+            # hasonegentau_hcand2 = ak.num(leps1.genpt[leps2.genpt != None]) == 1 
 
 
+            # # Genmatching mask
+            # isgenmatched = hasonegentau_hcand1 & hasonegentau_hcand2 
+
+            # # h_cand = ak.mask(h_cand, isgenmatched)
+
+            # print(f"""h_cand after genmatching: {h_cand.fields}""")
+            # h_cand = ak.where(isgenmatched, ak.concatenate([leps1,leps2], axis=1), h_cand)
 
             # print(f"""Met fields: {events.MET.sumEt}""")
 
