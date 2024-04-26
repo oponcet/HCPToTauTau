@@ -16,7 +16,10 @@ Quickstart:
 - [order](https://github.com/riga/order)
 - [luigi](https://github.com/spotify/luigi)
 
+### Useful links:
+These are useful links that can save you time and effort.  Because let's face it, even though you know these websites exist, you always manage to misplace the link.
 
+- [NanoAOD doc](https://cms-nanoaod-integration.web.cern.ch/autoDoc/NanoAODv12/2022/2023/doc_DYJetsToLL_M-50_TuneCP5_13p6TeV-madgraphMLM-pythia8_Run3Summer22NanoAODv12-130X_mcRun3_2022_realistic_v5-v2.html#GenPart)
 
 ### Tips and trick :hear_no_evil:
 Welcome to the Tips and Tricks section! Here, you'll find recipes to make your journey with ColumnFlow smoother and more efficient. Let's unlock the secrets to mastering ColumnFlow with ease! :rocket:
@@ -157,3 +160,4 @@ fig, ax = plt.subplots()
 plt.hist(ak.to_numpy(leps1["mass"]).flatten(), bins=20, range=(0, 2), alpha = 0.5)
 plt.savefig("mass.pdf") 
 ```
+
