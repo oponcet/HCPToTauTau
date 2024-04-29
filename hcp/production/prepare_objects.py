@@ -389,9 +389,13 @@ def buildhcand(self: Producer,
             # matched_leps1 = leps1[is_matched_leps1]
             # matched_leps2 = leps2[is_matched_leps2]
 
-            # Create a mask to keep only the leps1 and leps2 that match with a gentau
-            is_matched_leps1 = ak.any(gen_mask_leps1, axis=1)
-            is_matched_leps2 = ak.any(gen_mask_leps2, axis=1)
+            # # Create a mask to keep only the leps1 and leps2 that match with a gentau
+            # is_matched_leps1 = ak.any(gen_mask_leps1, axis=1) 
+            # is_matched_leps2 = ak.any(gen_mask_leps2, axis=1)
+
+            # Create a mask to keep only the leps1 and leps2 that match with a gentau and have genpt != -99
+            is_matched_leps1 = ak.any(gen_mask_leps1 & (leps1.genpt != -99), axis=1) 
+            is_matched_leps2 = ak.any(gen_mask_leps2 & (leps2.genpt != -99), axis=1)
 
             # Apply the mask to leps1 and leps2
             matched_leps1 = ak.mask(leps1, is_matched_leps1)
@@ -573,9 +577,13 @@ def buildhcand(self: Producer,
             # matched_leps1 = leps1[is_matched_leps1]
             # matched_leps2 = leps2[is_matched_leps2]
 
-            # Create a mask to keep only the leps1 and leps2 that match with a gentau
-            is_matched_leps1 = ak.any(gen_mask_leps1, axis=1)
-            is_matched_leps2 = ak.any(gen_mask_leps2, axis=1)
+            # # Create a mask to keep only the leps1 and leps2 that match with a gentau
+            # is_matched_leps1 = ak.any(gen_mask_leps1, axis=1)
+            # is_matched_leps2 = ak.any(gen_mask_leps2, axis=1)
+
+            # Create a mask to keep only the leps1 and leps2 that match with a gentau and have genpt != -99
+            is_matched_leps1 = ak.any(gen_mask_leps1 & (leps1.genpt != -99), axis=1) 
+            is_matched_leps2 = ak.any(gen_mask_leps2 & (leps2.genpt != -99), axis=1)
 
             # Apply the mask to leps1 and leps2
             matched_leps1 = ak.mask(leps1, is_matched_leps1)
@@ -757,7 +765,9 @@ def buildhcand(self: Producer,
             # matched_leps = leps[is_matched_leps]
 
             # Create a mask to keep only the leps1 and leps2 that match with a gentau
-            is_matched_leps = ak.any(gen_mask_leps, axis=1)
+            # is_matched_leps = ak.any(gen_mask_leps, axis=1)
+            # Create a mask to keep only the leps1 and leps2 that match with a gentau and have genpt != -99
+            is_matched_leps = ak.any(gen_mask_leps & (leps.genpt != -99), axis=1)
 
             # Apply the mask to leps1 and leps2
             matched_leps = ak.mask(leps, is_matched_leps)

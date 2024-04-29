@@ -18,6 +18,7 @@ from hcp.util import invariant_mass, deltaR, transverse_mass
 from hcp.util import TetraVec, _invariant_mass, deltaR
 
 
+
 from modules.extern.TauAnalysis.ClassicSVfit.wrapper.pybind_wrapper import *
 import time
 
@@ -30,6 +31,118 @@ hist = maybe_import("hist")
 mpl = maybe_import("matplotlib")
 plt = maybe_import("matplotlib.pyplot")
 mplhep = maybe_import("mplhep")
+plothist = maybe_import("plothist")
+
+print("plot_hist : ", plothist)
+print("plt: ", plt)
+
+# Matplotlib paramter for the plots
+
+# params = {"ytick.color" : "black",
+#           "xtick.color" : "black",
+#           "axes.labelcolor" : "black",
+#           "axes.edgecolor" : "black",
+#           "text.usetex" : True,
+#           "font.family" : "serif",
+#           "font.serif" : ["Computer Modern Serif"]}
+# plt.rcParams.update(params)
+
+
+def create_TH1_histogram(array, name, title, bins, min_val, max_val):
+    """
+    Create a TH1D histogram from an array.
+
+    Args:
+    - array (list): The array containing the data.
+    - name (str): The name of the histogram.
+    - title (str): The title of the histogram.
+    - bins (int): The number of bins.
+    - min_val (float): The minimum value for the x-axis.
+    - max_val (float): The maximum value for the x-axis.
+
+    Returns:
+    - hist (ROOT.TH1D): The TH1D histogram.
+    """    
+    hist = root.TH1D(name, title, bins, min_val, max_val)
+    for value in array:
+        # print(value)
+        hist.Fill(value)
+
+    # Save the histogram in a root file
+    root_file = root.TFile("SVFitplots/"+name+".root", "RECREATE")
+    hist.Write()
+    root_file.Close()
+
+    return hist
+
+def create_histogram_matplotlib(array, name, title, bins, range_min, range_max):
+    """
+    Create a histogram from an array using Matplotlib.
+
+    Args:
+    - array (array-like): The array containing the data.
+    - name (str): The name of the histogram.
+    - title (str): The title of the histogram.
+    - bins (int or array-like): The number of bins or bin edges.
+    - range_min (float): The minimum value for the x-axis.
+    - range_max (float): The maximum value for the x-axis.
+
+    Returns:
+    - hist (array): The histogram values.
+    - bin_edges (array): The bin edges.
+    """
+
+    # Create histogram using Matplotlib
+    hist, bin_edges, _ = plt.hist(array, bins=bins, range=(range_min, range_max), histtype='step', label=name, alpha = 0.5)
+
+    # Set plot labels and title
+    plt.xlabel(title)
+    plt.ylabel('a.u.')
+    plt.title(title)
+
+
+    # Add smaller ticks on x-axis
+    # plt.gca().xaxis.set_minor_locator(plt.MultipleLocator((range_max-range_min)/20.))
+
+    # # Add smaller ticks on y-axis
+    # plt.gca().yaxis.set_minor_locator(plt.MultipleLocator((range_max-range_min)/20.))
+
+    # Save the histogram plot as an image
+    plt.savefig("SVFitplots/"+name+".pdf")
+
+    return hist, bin_edges
+
+def create_histogram_plothist(array, name, title, bins, range_min, range_max, xaxis):
+    """
+    Create a histogram from an array using plothist.
+
+    Args:
+    - array (array-like): The array containing the data.
+    - name (str): The name of the histogram.
+    - title (str): The title of the histogram.
+    - bins (int or array-like): The number of bins or bin edges.
+    - range_min (float): The minimum value for the x-axis.
+    - range_max (float): The maximum value for the x-axis.
+
+    Returns:
+    - hist (array): The histogram values.
+    - bin_edges (array): The bin edges.
+    """
+
+    # Make the histogram
+    h = plothist.make_hist(array, bins=bins, range=(range_min, range_max))
+
+    # Plot the histogram
+    fig, ax = plt.subplots()
+    plothist.plot_hist(h, ax=ax)
+    ax.set_xlabel(xaxis)
+    ax.set_ylabel("Entries")
+    ax.set_title(title)
+
+    # Save the histogram plot as an image
+    fig.savefig("SVFitplots/"+name+"plthist.pdf", bbox_inches="tight")
+
+    return h
 
 
 # Print the version of the libraries 
@@ -63,7 +176,7 @@ def svfit(self: Producer,
 
     print("\033[96m >>> Started SVFit production\033[0m")
     
-    verb = 1
+    verb = 0
 
     # print(breakhere)
 
@@ -169,16 +282,13 @@ def svfit(self: Producer,
     print_if_verbose(verb,"leps1 genphi = ", leps1_genphi )
     print_if_verbose(verb,"leps1 genmass = ", leps1_genmass )
 
+    # leps1_genp4 = PtEtaPhiMLorentzVector.from_ptetaphim(leps1_genpt, leps1_geneta, leps1_genphi, leps1_genmass)
+    # leps2_genp4 = PtEtaPhiMLorentzVector.from_ptetaphim(leps2_genpt, leps2_geneta, leps2_genphi, leps2_genmass)
 
+    # leps1_genp4 = PtEtaPhiMLorentzVector.from_ptetaphim(leps1_genpt, leps1_geneta, leps1_genphi, leps1_genmass)
+    # leps2_genp4 = PtEtaPhiMLorentzVector.from_ptetaphim(leps2_genpt, leps2_geneta, leps2_genphi, leps2_genmass)
 
-    
-
-    # Make the plot
-    # fig, ax = plt.subplots()
-    # plt.style.use(mplhep.style.CMS)
-    # plt.hist(variable.flatten(), bins=20, range=(0, 2), alpha = 0.5)
-    # plt.hist(ak.to_numpy(leps1["mass"]).flatten(), bins=20, range=(0, 2), alpha = 0.5)
-    # plt.savefig("mass.pdf")    
+ 
 
     # Convert the Awkward Array to numpy array for leps1 
     leps2_pt = ak.to_numpy(leps2["pt"])
@@ -204,7 +314,58 @@ def svfit(self: Producer,
     print_if_verbose(verb,"leps2 genmass = ", leps2_genmass )
 
     
+    leps1_genp4 = ak.zip({"pt": leps1_genpt, "eta": leps1_geneta, "phi": leps1_genphi, "mass": leps1_genmass},
+                      with_name="PtEtaPhiMLorentzVector",
+                      behavior=coffea.nanoevents.methods.vector.behavior)
 
+    leps2_genp4 = ak.zip({"pt": leps2_genpt, "eta": leps2_geneta, "phi": leps2_genphi, "mass": leps2_genmass},
+                        with_name="PtEtaPhiMLorentzVector",
+                        behavior=coffea.nanoevents.methods.vector.behavior)
+
+
+
+    gen_ditaumass = ak.to_numpy((leps1_genp4 + leps2_genp4).mass).flatten()
+    gen_ditaupt = ak.to_numpy((leps1_genp4 + leps2_genp4).pt).flatten()
+    gen_ditaueta = ak.to_numpy((leps1_genp4 + leps2_genp4).eta).flatten()
+    gen_ditauphi = ak.to_numpy((leps1_genp4 + leps2_genp4).phi).flatten()
+
+
+    # # Make the plot
+    # fig, ax = plt.subplots()
+    # plt.hist(ak.to_numpy(gen_ditaumass).flatten(), bins=200, range=(0, 200), alpha = 0.5)
+    # plt.savefig("gen_ditaumass.pdf")   
+
+
+    # # # Create a TH1D histogram for metx
+    # hist1 = root.TH1D("gen_ditaumass", "gen_ditaumass", 200, 0, 200)
+
+    # # Fill the histogram with metx values
+    # for mass in gen_ditaumass:
+    #     hist1.Fill(mass)
+
+
+    # # Draw the histogram
+    # hist1.Draw()
+
+    # # Save the histogram in a root file
+    # root_file = root.TFile("gen_ditaumass.root", "RECREATE")
+    # hist1.Write()
+    # root_file.Close()
+
+    gen_mass_hist = create_TH1_histogram(gen_ditaumass, "gen_mass_dy", "Gen Mass Distribution", 200, 0, 200)
+    gen_pt_hist = create_TH1_histogram(gen_ditaupt, "gen_pt_dy", "Gen Pt Distribution", 200, 0, 200)
+    gen_eta_hist = create_TH1_histogram(gen_ditaueta, "gen_eta_dy", "Gen Eta Distribution", 100, -3, 3)
+    gen_phi_hist = create_TH1_histogram(gen_ditauphi, "gen_phi_dy", "Gen Phi Distribution", 100, -3.2, 3.2)
+
+    # gen_mass_hist_plt = create_histogram_matplotlib(gen_ditaumass, "gen_mass_dy", "Gen Mass Distribution", 200, 0, 200)
+    # gen_pt_hist_plt = create_histogram_matplotlib(gen_ditaupt, "gen_pt_dy", "Gen Pt Distribution", 200, 0, 200)
+    # gen_eta_hist_plt = create_histogram_matplotlib(gen_ditaueta, "gen_eta_dy", "Gen Eta Distribution", 100, -3, 3)
+    # gen_phi_hist_plt = create_histogram_matplotlib(gen_ditauphi, "gen_phi_dy", "Gen Phi Distribution", 100, -3.2, 3.2)
+
+    gen_mass_hist_plthist = create_histogram_plothist(gen_ditaumass, "gen_mass_dy", "Gen Mass Distribution", 200, 0, 200, "Gen Mass")
+    gen_pt_hist_plthist = create_histogram_plothist(gen_ditaupt, "gen_pt_dy", r"Gen $p_{T}$ Distribution", 200, 0, 200, r"Gen $p_{T}$")
+    gen_eta_hist_plthist = create_histogram_plothist(gen_ditaueta, "gen_eta_dy", r"Gen $|\eta|$ Distribution", 100, -3, 3, r"Gen $|\eta|$")
+    gen_phi_hist_plthist = create_histogram_plothist(gen_ditauphi, "gen_phi_dy", r"Gen $\phi$ Distribution", 100, -3.2, 3.2, r"Gen $\phi$")
 
     # # # Create a TH1D histogram for metx
     # hist1 = root.TH1D("hist_mass_leps1", "mass", 50, 0, 5)
@@ -233,7 +394,7 @@ def svfit(self: Producer,
     # hist2.Write()
     # root_file.Close()
 
-    breakhere
+    # breakhere
     # Define the MeasuredTauLepton objects for the SVFit algorithm
     leps1_MeasuredTauLepton = np.array([MeasuredTauLepton(*args) for args in zip(decayType, leps1_pt, leps1_eta, leps1_phi ,leps1_mass, leps1_dm)])
     leps2_MeasuredTauLepton = np.array([MeasuredTauLepton(1,*args) for args in zip(leps2_pt, leps2_eta, leps2_phi ,leps2_mass, leps2_dm)])
@@ -254,13 +415,19 @@ def svfit(self: Producer,
 
     mass_array = []
     err_mass_array = []
+    pt_array = []
+    err_pt_array = []
+    eta_array = []
+    err_eta_array = []
+    phi_array = []
+    err_phi_array = []
     
     start_time = time.time()
 
     # Loop over each event 
     print(f"len(leps1_MeasuredTauLepton) : {len(leps1_MeasuredTauLepton)}")
     for i in range(len(leps1_MeasuredTauLepton)):
-    #for i in range(1000):
+    # for i in range(10):
 
         # Set the likelihood file name
         # svfit_filename = "testSVfit_hacand" + str(i) + ".root"
@@ -284,10 +451,23 @@ def svfit(self: Producer,
         print_if_verbose(verb,f"isValidSolution : {isValidSolution}")
         mass = svFitAlgo.getHistogramAdapter().getMass()
         errmass = svFitAlgo.getHistogramAdapter().getMassErr()
-        print( f"mass : {mass}")
-        print( f"errmass : {errmass}")
+        pt = svFitAlgo.getHistogramAdapter().getPt()
+        errpt = svFitAlgo.getHistogramAdapter().getPtErr()
+        eta = svFitAlgo.getHistogramAdapter().getEta()
+        erreta = svFitAlgo.getHistogramAdapter().getEtaErr()
+        phi = svFitAlgo.getHistogramAdapter().getPhi()
+        errphi = svFitAlgo.getHistogramAdapter().getPhiErr()
+
+        # print( f"mass : {mass}")
+        # print( f"errmass : {errmass}")
         mass_array.append(mass)
         err_mass_array.append(errmass)
+        pt_array.append(pt)
+        err_pt_array.append(errpt)
+        eta_array.append(eta)
+        err_eta_array.append(erreta)
+        phi_array.append(phi)
+        err_phi_array.append(errphi)
         
     end_time = time.time()
 
@@ -306,38 +486,47 @@ def svfit(self: Producer,
     # plt.ylabel("Events")
     # plt.savefig("mass_SVFit.pdf") 
 
-    # # Create a TH1D histogram for metx
-    hist1 = root.TH1D("mass_SVFit_massconstain_dy", "mass", 200, 0, 200)
-
-    # Fill the histogram with metx values
-    for mass in mass_array:
-        hist1.Fill(mass)
-
-    # Draw the histogram
-    hist1.Draw()
-
-    # Save the histogram in a root file
-    root_file = root.TFile("mass_SVFit.root", "RECREATE")
-    hist1.Write()
-    root_file.Close()
-
-
     # # # Create a TH1D histogram for metx
-    # histgen = root.TH1D("mass_gen", "mass", 200, 0, 200)
-
-    # ditaumass_gen = leps1_genmass + leps2_genmass
+    # hist1 = root.TH1D("mass_SVFit_massconstrain_dy", "mass", 200, 0, 200)
 
     # # Fill the histogram with metx values
-    # for massgen in ditaumass_gen:
-    #     histgen.Fill(massgen)
+    # for mass in mass_array:
+    #     hist1.Fill(mass)
 
     # # Draw the histogram
-    # histgen.Draw()
+    # hist1.Draw()
 
-    # # Save the histogram in a root file
-    # root_file = root.TFile("mass_gen.root", "RECREATE")
-    # histgen.Write()
-    # root_file.Close()
+    mass_hist = create_TH1_histogram(mass_array, "mass_SVFit_massconstrain_dy", "Mass Distribution", 200, 0, 200)
+    pt_hist = create_TH1_histogram(pt_array, "pt_hist_SVFit_massconstrain_dy", "Pt Distribution", 200, 0, 200)
+    eta_hist = create_TH1_histogram(eta_array, "eta_hist_SVFit_massconstrain_dy", "Eta Distribution", 100, -3, 3)
+    phi_hist = create_TH1_histogram(phi_array, "phi_hist_SVFit_massconstrain_dy", "Phi Distribution", 100, -3.2, 3.2)
+  
+    
+    # Resolution : 
+    mass_resolution = (np.array(mass_array) - np.array(gen_ditaumass)) / np.array(gen_ditaumass)    
+    pt_resolution = (np.array(pt_array) - np.array(gen_ditaupt)) / np.array(gen_ditaupt)
+    eta_resolution = (np.array(eta_array) - np.array(gen_ditaueta)) / np.array(gen_ditaueta)
+    phi_resolution = (np.array(phi_array) - np.array(gen_ditauphi)) / np.array(gen_ditauphi)
+
+
+    mass_resolution_hist = create_TH1_histogram(mass_resolution, "mass_resolution_SVFit_massconstrain_dy", "Mass resolution", 100, -1, 1)
+    pt_resolution_hist = create_TH1_histogram(pt_resolution, "pt_resolution_SVFit_massconstrain_dy", "Pt resolution", 100, -1, 1)
+    eta_resolution_hist = create_TH1_histogram(eta_resolution, "eta_resolution_SVFit_massconstrain_dy", "Eta resolution",  100, -1, 1)
+    phi_resolution_hist = create_TH1_histogram(phi_resolution, "phi_resolution_SVFit_massconstrain_dy", "Phi resolution", 100, -1, 1)
+
+    # mass_resolution_hist_plt = create_histogram_matplotlib(mass_resolution, "mass_resolution_SVFit_massconstrain_dy", "Mass resolution", 100, -1, 1)
+    # pt_resolution_hist_plt = create_histogram_matplotlib(pt_resolution, "pt_resolution_SVFit_massconstrain_dy", r"$p_{T}$ resolution", 100, -1, 1)
+    # eta_resolution_hist_plt = create_histogram_matplotlib(eta_resolution, "eta_resolution_SVFit_massconstrain_dy", r"$|\eta| resolution", 100, -1, 1)
+    # phi_resolution_hist_plt = create_histogram_matplotlib(phi_resolution, "phi_resolution_SVFit_massconstrain_dy", r"$\phi$ resolution", 100, -1, 1)
+   
+
+    mass_resolution_hist_plthist = create_histogram_plothist(mass_resolution, "mass_resolution_SVFit_massconstrain_dy", "Mass Resolution Distribution", 100, -1, 1, "Mass Resolution")
+    pt_resolution_hist_plthist = create_histogram_plothist(pt_resolution, "pt_resolution_SVFit_massconstrain_dy", r"$p_{T}$ resolution Distribution", 100, -1, 1, r"$p_{T}$ resoution")
+    eta_resolution_hist_plthist = create_histogram_plothist(eta_resolution, "eta_resolution_SVFit_massconstrain_dy", r"$|\eta|$ resolution Distribution", 100, -1, 1, r"$|\eta|$ resolution")
+    phi_resolution_hist_plthist = create_histogram_plothist(phi_resolution, "phi_resolution_SVFit_massconstrain_dy", r"$\phi$ resolution Distribution", 100, -1, 1, r"$\phi$ resolution")
+
+    # mass_resolution_hist_plthist = create_histogram_plothist(mass_resolution, "mass_resolution_SVFit_massconstrain_dy", "Mass resolution", 100, -1, 1)
+
 
     breakhere
     # print(f"h_cand : {breakhere}")
@@ -553,3 +742,5 @@ def fastMTT(self: Producer,
     print(f"h_cand : {breakhere}") # breakhere
 
     return events
+
+

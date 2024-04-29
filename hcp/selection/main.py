@@ -103,18 +103,34 @@ def main(
 
     print("hcand fields = ", events.hcand.fields)
 
-    # genpt_is_none = events.hcand.genpt is None
+    # leps1 = events.hcand[:,:1]
+    # leps2 = events.hcand[:,1:2]
 
-    # # Select the events where gentpt is None
-    # hcand_with_none_genpt = events.hcand[genpt_is_none]
+    # from IPython import embed; embed()
 
-    # Print the fields of the selected events
-    # print(ak.to_list(events.hcand))
+    # leps1_genpt = ak.to_numpy(leps1["genpt"])
+    
+    # leps1_geneta = ak.to_numpy(leps1["geneta"])
+    # leps1_genphi = ak.to_numpy(leps1["genphi"])
+    # leps1_genmass = ak.to_numpy(leps1["genmass"])
 
-    # print("hcand after where: ", ak.to_list(events.hcand))
+    # leps1_p4 = PtEtaPhiMLorentzVector.from_ptetaphim(leps1_pt, leps1_eta, leps1_phi, leps1_mass)
 
-    #from IPython import embed; embed()
+    # leps2_genpt = ak.to_numpy(leps2["genpt"])
+    # leps2_geneta = ak.to_numpy(leps2["geneta"])
+    # leps2_genphi = ak.to_numpy(leps2["genphi"])
+    # leps2_genmass = ak.to_numpy(leps2["genmass"])
 
+    # leps2_p4 = PtEtaPhiMLorentzVector.from_ptetaphim(leps2_pt, leps2_eta, leps2_phi, leps2_mass)
+
+    # di_taumass = (leps1_p4 + leps2_p4).mass
+
+
+    # # Make the plot
+    # fig, ax = plt.subplots()
+    # plt.style.use(mplhep.style.CMS)
+    # plt.hist(di_taumass.flatten(), bins=200, range=(0, 200), alpha = 0.5)
+    # plt.savefig("mass_ditau.pdf")    
 
 
 
