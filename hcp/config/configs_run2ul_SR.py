@@ -46,6 +46,7 @@ def add_config(
         #"data",
         #"tt",
         "dy",
+        "h_ggf_tautau",
         #"st",
         #"ewk",
         #"vv",
@@ -63,6 +64,7 @@ def add_config(
         #"data_mu_b",
         # backgrounds
         "dy_lep_m50_madgraph",
+        "h_ggf_tautau_powheg",
         #"tt_sl_powheg",
         #"tt_dl_powheg",
         #"dy_lep_m50_1j_madgraph",

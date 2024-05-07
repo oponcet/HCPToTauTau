@@ -196,7 +196,7 @@ def gentau_selection(
                 & (GenPart.status == 2) # tau is going to decay = not final states 
                 & (GenPart.pt >= 10) 
                 & (np.abs(GenPart.eta) <= 2.3) 
-                & (GenPart[gentau_momidx].pdgId == 23) # comes from Z boson 
+                & ((GenPart[gentau_momidx].pdgId == 23) | (GenPart[gentau_momidx].pdgId == 25)) # comes from Z boson or Higgs boson
                 & (GenPart.hasFlags(["isPrompt","isFirstCopy"]))) 
 
     isgentau = ak.fill_none(isgentau, False)
